@@ -1,0 +1,25 @@
+{
+  "name": "equihash",
+  "version": "0.0.1-0",
+  "description": "Equihash proof of work",
+  "main": "./lib",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitalbazaar/equihash.git"
+  },
+  "bugs": {
+    "url": "https://github.com/digitalbazaar/equihash/issues"
+  },
+  "homepage": "https://github.com/digitalbazaar/equihash#readme",
+  "gypfile": true,
+  "scripts": {
+    "test": "mocha -t 30000"
+  },
+  "dependencies": {
+    "bindings": "^1.2.1",
+    "nan": "^2.6.2"
+  },
+  "devDependencies": {
+    "mocha": "^3.4.2"
+  }
+}
