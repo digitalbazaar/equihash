@@ -1,27 +1,28 @@
+/* global should */
 const assert = require('assert');
-const equihash = require('..');
+const crypto = require('crypto');
+const equihash = require('..')('khovratovich');
 
 describe('Equihash', function() {
-  _test(equihash('khovratovich'));
-});
+  it('should find a solution', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    }
+    const input = new Buffer('00000000000000000000000000000000');
 
-function _test(engineId) {
-  describe(engineId, function() {
-    let engine;
-    before(function() {
-      engine = equihash(engineId);
-    });
-    it('should find a solution', function(done) {
-      engine.find({}, (err, results) => {
-        assert.ifError(err);
-        assert.equal(typeof results, 'object');
-        assert('solutions' in results);
-        done();
-      });
-    });
-    it('should verify a solution', function(done) {
-      //engine.verify({}, done);
+    equihash.solve(input, options, (err, results) => {
+      assert(err === null);
+      assert(results.n === options.n);
+      assert(results.k === options.k);
+      assert(results.proof);
+      const b64proof = Buffer.from(results.proof).toString('base64')
+      assert(b64proof === 'GmAAAArlAABjeAAAqt8AACoNAAA3qgAANxwAAKD1AAA=');
       done();
     });
   });
-};
+  it.skip('should verify a solution', function(done) {
+    //engine.verify({}, done);
+    done();
+  });
+});
