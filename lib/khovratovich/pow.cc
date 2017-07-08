@@ -6,7 +6,7 @@ CC0 license
 #include "blake/blake2.h"
 #include <algorithm>
 
-
+/*
 static uint64_t rdtsc(void) {
 #ifdef _MSC_VER
     return __rdtsc();
@@ -24,9 +24,7 @@ static uint64_t rdtsc(void) {
 #endif
 #endif
 }
-
-
-using namespace _POW;
+*/
 using namespace std;
 
 void Equihash::InitializeMemory()
@@ -94,7 +92,7 @@ std::vector<Input> Equihash::ResolveTree(Fork fork) {
 
 
 void Equihash::ResolveCollisions(bool store) {
-    const unsigned tableLength = tupleList.size();  //number of rows in the hashtable 
+    const unsigned tableLength = tupleList.size();  //number of rows in the hashtable
     const unsigned maxNewCollisions = tupleList.size()*FORK_MULTIPLIER;  //max number of collisions to be found
     const unsigned newBlocks = tupleList[0][0].blocks.size() - 1;// number of blocks in the future collisions
     std::vector<Fork> newForks(maxNewCollisions); //list of forks created at this step
@@ -102,7 +100,7 @@ void Equihash::ResolveCollisions(bool store) {
     vector<vector<Tuple>> collisionList(tableLength,tableRow);
     std::vector<unsigned> newFilledList(tableLength,0);  //number of entries in rows
     uint32_t newColls = 0; //collision counter
-    for (unsigned i = 0; i < tableLength; ++i) {        
+    for (unsigned i = 0; i < tableLength; ++i) {
         for (unsigned j = 0; j < filledList[i]; ++j)        {
             for (unsigned m = j + 1; m < filledList[i]; ++m) {   //Collision
                 //New index
@@ -118,7 +116,7 @@ void Equihash::ResolveCollisions(bool store) {
                 else {         //Resolve
                     if (newFilledList[newIndex] < LIST_LENGTH && newColls < maxNewCollisions) {
                         for (unsigned l = 0; l < newBlocks; ++l) {
-                            collisionList[newIndex][newFilledList[newIndex]].blocks[l] 
+                            collisionList[newIndex][newFilledList[newIndex]].blocks[l]
                                 = tupleList[i][j].blocks[l+1] ^ tupleList[i][m].blocks[l+1];
                         }
                         newForks[newColls] = newFork;
@@ -141,34 +139,26 @@ Proof Equihash::FindProof(){
     this->nonce = 1;
     while (nonce < MAX_NONCE) {
         nonce++;
-        printf("Testing nonce %d\n", nonce);
-        uint64_t start_cycles = rdtsc();
+        //printf("Testing nonce %d\n", nonce);
+        //uint64_t start_cycles = rdtsc();
         InitializeMemory(); //allocate
         FillMemory(4UL << (n / (k + 1)-1));   //fill with hashes
-        uint64_t fill_end = rdtsc();
-        printf("Filling %2.2f  Mcycles \n", (double)(fill_end - start_cycles) / (1UL << 20));
-        /*fp = fopen("proof.log", "a+");
-        fprintf(fp, "\n===MEMORY FILLED:\n");
-        PrintTuples(fp);
-        fclose(fp);*/
+        //uint64_t fill_end = rdtsc();
+        //printf("Filling %2.2f  Mcycles \n", (double)(fill_end - start_cycles) / (1UL << 20));
         for (unsigned i = 1; i <= k; ++i) {
-            uint64_t resolve_start = rdtsc();
+            //uint64_t resolve_start = rdtsc();
             bool to_store = (i == k);
             ResolveCollisions(to_store); //XOR collisions, concatenate indices and shift
-            uint64_t resolve_end = rdtsc();
-            printf("Resolving %2.2f  Mcycles \n", (double)(resolve_end - resolve_start) / (1UL << 20));
-           /* fp = fopen("proof.log", "a+");
-            fprintf(fp, "\n===RESOLVED AFTER STEP %d:\n", i);
-            PrintTuples(fp);
-            fclose(fp);*/
+            //uint64_t resolve_end = rdtsc();
+            //printf("Resolving %2.2f  Mcycles \n", (double)(resolve_end - resolve_start) / (1UL << 20));
         }
-        uint64_t stop_cycles = rdtsc();
+        //uint64_t stop_cycles = rdtsc();
 
-        double  mcycles_d = (double)(stop_cycles - start_cycles) / (1UL << 20);
-        uint32_t kbytes = (tupleList.size()*LIST_LENGTH*k*sizeof(uint32_t)) / (1UL << 10);
-        printf("Time spent for n=%d k=%d  %d KiB: %2.2f  Mcycles \n",
-            n, k, kbytes,
-            mcycles_d);
+        //double  mcycles_d = (double)(stop_cycles - start_cycles) / (1UL << 20);
+        //uint32_t kbytes = (tupleList.size()*LIST_LENGTH*k*sizeof(uint32_t)) / (1UL << 10);
+        //printf("Time spent for n=%d k=%d  %d KiB: %2.2f  Mcycles \n",
+        //    n, k, kbytes,
+        //    mcycles_d);
 
         //Duplicate check
         for (unsigned i = 0; i < solutions.size(); ++i) {
