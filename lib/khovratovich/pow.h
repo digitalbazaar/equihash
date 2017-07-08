@@ -21,16 +21,18 @@ const unsigned FORK_MULTIPLIER=3; //Maximum collision factor
 /* The block used to initialize the PoW search
    @v actual values
 */
+
 /*
 static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
 {
     size_t i = 0;
-    fprintf(stdout, "%s\n", title);
+    fprintf(stdout, "%s length: %i\n", title, buf_len);
     for(i = 0; i < buf_len; ++i)
     fprintf(stdout, "0x%08x%s", buf[i],
              ( i + 1 ) % 4 == 0 ? "\r\n" : " " );
 
-}*/
+}
+*/
 
 class Seed{
 	std::vector<uint32_t> v;

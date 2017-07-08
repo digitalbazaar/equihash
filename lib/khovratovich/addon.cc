@@ -44,6 +44,7 @@ class EquihashSolutionWorker : public AsyncWorker {
     Proof p = equihash.FindProof();
     solution = p.inputs;
     nonce = p.nonce;
+    //printhex("solution", &solution[0], solution.size());
   }
 
   // Executed when the async work is complete
@@ -53,8 +54,10 @@ class EquihashSolutionWorker : public AsyncWorker {
      HandleScope scope;
      Local<Object> obj = Nan::New<Object>();
      Local<Object> proofValue =
-       Nan::CopyBuffer((const char*)&solution[0], solution.size())
+       Nan::CopyBuffer((const char*)&solution[0], solution.size() * 4)
          .ToLocalChecked();
+
+     //printhex("solution COPY", &solution[0], solution.size());
 
      obj->Set(New("n").ToLocalChecked(), New(n));
      obj->Set(New("k").ToLocalChecked(), New(k));
@@ -100,9 +103,7 @@ NAN_METHOD(Solve) {
    size_t bufferLength = node::Buffer::Length(seedValue) / 4;
    unsigned* seedBuffer = (unsigned*)node::Buffer::Data(seedValue);
 
-   //fprintf(stdout, "input bufferLength: %i\n", bufferLength);
-   //printhex("input", seedBuffer, bufferLength);
-   //fprintf(stdout, "\n\n");
+   //printhex("seed", seedBuffer, bufferLength);
 
    Seed seed(seedBuffer, bufferLength);
 
@@ -110,17 +111,40 @@ NAN_METHOD(Solve) {
 }
 
 NAN_METHOD(Verify) {
-  /*
-   char* buffer = (char*) node::Buffer::Data(info[0]->ToObject());
-
-   v8::Local<v8::Object> buf = NewBuffer(DATA_SIZE).ToLocalChecked();
-   char* pbuf = node::Buffer::Data(buf);
-   for (unsigned char i = 0; i < DATA_SIZE; i++) {
-     pbuf[i] = 'a' + i;
+   // ensure first argument is an object
+   if(!info[0]->IsObject()) {
+      Nan::ThrowTypeError("'options' must be an object");
+      return;
    }
-   info.GetReturnValue().Set(buf);
-   */
-   info.GetReturnValue().Set(748);
+
+   // unbundle all data needed to check the proof
+   Handle<Object> object = Handle<Object>::Cast(info[0]);
+   Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
+   Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
+   Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
+   Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
+   Handle<Value> inputValue = object->Get(New("value").ToLocalChecked());
+
+   const unsigned n = To<uint32_t>(nValue).FromJust();
+   const unsigned k = To<uint32_t>(kValue).FromJust();
+   const unsigned nonce = To<uint32_t>(nonceValue).FromJust();
+   size_t seedBufferLength = node::Buffer::Length(seedValue) / 4;
+   unsigned* seedBuffer = (unsigned*)node::Buffer::Data(seedValue);
+   size_t inputBufferLength = node::Buffer::Length(inputValue) / 4;
+   unsigned* inputBuffer = (unsigned*)node::Buffer::Data(inputValue);
+
+   //printhex("seed", seedBuffer, seedBufferLength);
+   //printhex("input", inputBuffer, inputBufferLength);
+
+   // initialize the proof object
+   Seed seed(seedBuffer, seedBufferLength);
+   std::vector<Input> inputs;
+   inputs.resize(inputBufferLength,0);
+   std::copy(inputBuffer, inputBuffer + inputBufferLength, inputs.begin());
+   Proof p(n, k, seed, nonce, inputs);
+
+   // check the proof
+   info.GetReturnValue().Set(p.Test());
 }
 
 NAN_MODULE_INIT(InitAll) {
