@@ -134,8 +134,8 @@ void Equihash::ResolveCollisions(bool store) {
 }
 
 Proof Equihash::FindProof(){
-    FILE* fp = fopen("proof.log", "w+");
-    fclose(fp);
+    //FILE* fp = fopen("proof.log", "w+");
+    //fclose(fp);
     this->nonce = 1;
     while (nonce < MAX_NONCE) {
         nonce++;
