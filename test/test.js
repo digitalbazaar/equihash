@@ -19,8 +19,7 @@ describe('Equihash', function() {
       assert(proof.nonce);
       assert(proof.value);
       const b64proof = Buffer.from(proof.value).toString('base64');
-      //console.log("PROOF", b64proof);
-      assert(b64proof === '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAA=');
+      assert(b64proof === '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAAkKwAATXcAABVPAADecwAAkC0AADSkAAAFDgAAfiMAAA8HAAAdzAAAclYAAAt5AAAynwAABOYAAGsVAAANiwAAKF0AAJuLAADAGwAAy5cAAOQIAAByGwAAesQAAKDnAAA=');
       done();
     });
   });
@@ -70,8 +69,26 @@ describe('Equihash', function() {
       assert(proof.k === options.k);
       assert(proof.nonce);
       assert(proof.value);
-      const b64proof = Buffer.from(proof.value).toString('base64');
-      assert(b64proof === '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAA=');
+      assert(equihash.verify(input, proof));
+      done();
+    });
+  });
+  it('should fail to verify an invalid proof', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert(err === null);
+      assert(proof.n === options.n);
+      assert(proof.k === options.k);
+      assert(proof.nonce);
+      assert(proof.value);
+      proof.value[0] = 0;
+      assert(!equihash.verify(input, proof));
       done();
     });
   });
