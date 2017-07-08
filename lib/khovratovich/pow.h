@@ -11,7 +11,7 @@ CC0 license
 #include <cstdio>
 
 
-const int SEED_LENGTH=8; //Length of seed in dwords ;
+const int SEED_LENGTH=16; //Length of seed in dwords ;
 const int NONCE_LENGTH=24; //Length of nonce in bytes;
 const int MAX_NONCE = 0xFFFFF;
 const int MAX_N = 32; //Max length of n in bytes, should not exceed 32
@@ -21,6 +21,16 @@ const unsigned FORK_MULTIPLIER=3; //Maximum collision factor
 /* The block used to initialize the PoW search
    @v actual values
 */
+/*
+static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
+{
+    size_t i = 0;
+    fprintf(stdout, "%s\n", title);
+    for(i = 0; i < buf_len; ++i)
+    fprintf(stdout, "0x%08x%s", buf[i],
+             ( i + 1 ) % 4 == 0 ? "\r\n" : " " );
+
+}*/
 
 class Seed{
 	std::vector<uint32_t> v;
@@ -32,8 +42,13 @@ public:
           v.resize(SEED_LENGTH, x);
 	}
 	explicit Seed(const unsigned* data, unsigned length){
+	  unsigned copyLength = SEED_LENGTH;
     v.resize(SEED_LENGTH,0);
-    std::copy(data, data + length, v.begin());
+    if(length <= SEED_LENGTH) {
+      copyLength = length;
+    }
+    std::copy(data, data + copyLength, v.begin());
+    //printhex("seed", &v[0], SEED_LENGTH);
 	}
 	Seed(const Seed&r){
 		v= r.v;

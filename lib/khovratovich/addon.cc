@@ -57,7 +57,7 @@ class EquihashSolutionWorker : public AsyncWorker {
 
      obj->Set(New("n").ToLocalChecked(), New(n));
      obj->Set(New("k").ToLocalChecked(), New(k));
-     obj->Set(New("proof").ToLocalChecked(), proofValue);
+     obj->Set(New("value").ToLocalChecked(), proofValue);
 
      Local<Value> argv[] = {
         Null(),
@@ -73,16 +73,7 @@ class EquihashSolutionWorker : public AsyncWorker {
   Seed seed;
   std::vector<Input> solution;
 };
-/*
-static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
-{
-    size_t i = 0;
-    fprintf(stdout, "%s\n", title);
-    for(i = 0; i < buf_len; ++i)
-    fprintf(stdout, "%02X%s", buf[i],
-             ( i + 1 ) % 16 == 0 ? "\r\n" : " " );
 
-}*/
 NAN_METHOD(Solve) {
    // ensure first argument is an object
    if(!info[0]->IsObject()) {
@@ -103,10 +94,14 @@ NAN_METHOD(Solve) {
 
    const unsigned n = To<uint32_t>(nValue).FromJust();
    const unsigned k = To<uint32_t>(kValue).FromJust();
+   size_t bufferLength = node::Buffer::Length(seedValue) / 4;
    unsigned* seedBuffer = (unsigned*)node::Buffer::Data(seedValue);
-   Seed seed(seedBuffer, SEED_LENGTH);
 
-   //printhex("seed", seedBuffer, SEED_LENGTH);
+   //fprintf(stdout, "input bufferLength: %i\n", bufferLength);
+   //printhex("input", seedBuffer, bufferLength);
+   //fprintf(stdout, "\n\n");
+
+   Seed seed(seedBuffer, bufferLength);
 
    AsyncQueueWorker(new EquihashSolutionWorker(n, k, seed, callback));
 }
