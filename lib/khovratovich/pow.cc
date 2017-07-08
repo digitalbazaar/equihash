@@ -197,12 +197,13 @@ bool Proof::Test()
     for (unsigned j = 0; j < (k + 1); ++j) {
         b &= (blocks[j] == 0);
     }
+    /*
     if (b && inputs.size()!=0)    {
         printf("Solution found:\n");
         for (unsigned i = 0; i < inputs.size(); ++i) {
             printf(" %x ", inputs[i]);
         }
-        printf("\n");
-    }
+        printf("%i\n", b);
+    }*/
     return b;
 }
