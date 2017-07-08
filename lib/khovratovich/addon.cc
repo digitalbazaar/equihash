@@ -43,6 +43,7 @@ class EquihashSolutionWorker : public AsyncWorker {
     Equihash equihash(n, k, seed);
     Proof p = equihash.FindProof();
     solution = p.inputs;
+    nonce = p.nonce;
   }
 
   // Executed when the async work is complete
@@ -57,6 +58,7 @@ class EquihashSolutionWorker : public AsyncWorker {
 
      obj->Set(New("n").ToLocalChecked(), New(n));
      obj->Set(New("k").ToLocalChecked(), New(k));
+     obj->Set(New("nonce").ToLocalChecked(), New(nonce));
      obj->Set(New("value").ToLocalChecked(), proofValue);
 
      Local<Value> argv[] = {
@@ -70,6 +72,7 @@ class EquihashSolutionWorker : public AsyncWorker {
   private:
   unsigned n;
   unsigned k;
+  Nonce nonce;
   Seed seed;
   std::vector<Input> solution;
 };

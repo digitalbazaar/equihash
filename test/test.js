@@ -16,6 +16,7 @@ describe('Equihash', function() {
       assert(err === null);
       assert(proof.n === options.n);
       assert(proof.k === options.k);
+      assert(proof.nonce);
       assert(proof.value);
       const b64proof = Buffer.from(proof.value).toString('base64');
       //console.log("PROOF", b64proof);
@@ -34,6 +35,7 @@ describe('Equihash', function() {
       assert(err === null);
       assert(proof.n === options.n);
       assert(proof.k === options.k);
+      assert(proof.nonce);
       assert(proof.value);
       done();
     });
@@ -49,6 +51,7 @@ describe('Equihash', function() {
       assert(err === null);
       assert(proof.n === options.n);
       assert(proof.k === options.k);
+      assert(proof.nonce);
       assert(proof.value);
       done();
     });
@@ -65,6 +68,7 @@ describe('Equihash', function() {
       assert(err === null);
       assert(proof.n === options.n);
       assert(proof.k === options.k);
+      assert(proof.nonce);
       assert(proof.value);
       const b64proof = Buffer.from(proof.value).toString('base64');
       assert(b64proof === '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAA=');
