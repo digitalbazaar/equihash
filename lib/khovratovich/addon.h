@@ -11,8 +11,7 @@
 
 #include <nan.h>
 
-NAN_METHOD(CreateProof);
-NAN_METHOD(FindProof);
-NAN_METHOD(TestProof);
+NAN_METHOD(Solve);
+NAN_METHOD(Verify);
 
 #endif  // EQUIHASH_KHOVRATOVICH_ADDON_H_
