@@ -1,33 +1,48 @@
-Equihash proof-of-work
-======================
+# Equihash Proof of Work
 
-Installation
-------------
+[![Build Status](https://ci.digitalbazaar.com/buildStatus/icon?job=equihash)](https://ci.digitalbazaar.com/job/equihash)
+
+Equihash is an asymmetric proof of work algorithm where it is difficult to
+generate a proof, but easy to verify. The algorithm makes it difficult to build
+custom hardware to solve the problem and ensures forced CPU and memory
+trade offs when attempting to solve the problem. The algorithm is useful for
+cryptocurrency mining as well as other problems that require a proof of
+work solution.
+
+## Installation
 
 ```
 npm install equihash
 ```
 
-Engines
--------
+## The Equihash API
+- solve(input, options, callback(err, proof))
+- verify(proof)
 
-- khovratovich
-  - https://github.com/khovratovich/equihash.git
-
-Usage
------
-
-```js
+## Usage Example
+```javascript
 const equihash = require('equihash')('khovratovich');
-equihash.solve(input, options, (err, solutions) => {
-  // handle err or process solutions
-});
-equiash.verify(solution, err => {
-  // handle err else success
+
+// input seed for equihash (up to 512 bits)
+const input = new Buffer('1234');
+const options = {
+  n: 90,
+  k: 5
+}
+
+equihash.solve(input, options, (err, proof) => {
+  if(err) {
+    return console.log('Failed to generate proof:', err);
+  }
+
+  console.log('Equihash proof:', proof)
+  console.log('Generated valid Equihash proof: ', equihash.verify(proof));
 });
 ```
 
-Testing
--------
+## Test Suite
 
-...
+```
+npm install
+npm run test
+```
