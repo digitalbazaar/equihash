@@ -2,11 +2,11 @@
 
 [![Build Status](https://ci.digitalbazaar.com/buildStatus/icon?job=equihash)](https://ci.digitalbazaar.com/job/equihash)
 
-Equihash is an asymmetric proof of work algorithm where it is difficult to
-generate a proof, but easy to verify. The algorithm makes it difficult to build
-custom hardware to generate the proof by ensuring forced CPU and memory
-trade offs. The algorithm is useful for cryptocurrency mining as well as 
-other problems that require a proof of work solution.
+Equihash is a tunable asymmetric proof of work algorithm where it is difficult 
+to generate a proof, but easy to verify one. The algorithm makes it difficult 
+to build custom hardware to generate the proof by ensuring forced CPU and 
+memory trade offs. The algorithm is useful for cryptocurrency mining as 
+well as building solutions that require a proof of work capability.
 
 ## Installation
 
