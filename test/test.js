@@ -1,4 +1,3 @@
-/* global should */
 const assert = require('assert');
 const crypto = require('crypto');
 const equihash = require('..')('khovratovich');
