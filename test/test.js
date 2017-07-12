@@ -72,6 +72,26 @@ describe('Equihash', function() {
       done();
     });
   });
+  it('should fail to verify with an alternate input', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.nonce);
+      assert(proof.value);
+      const inputAlternate = crypto.createHash('sha256')
+        .update('goodbye cruel world', 'utf8').digest();
+      assert(!equihash.verify(inputAlternate, proof));
+      done();
+    });
+  });
   it('should fail to verify an invalid proof', function(done) {
     const options = {
       n: 90,
