@@ -72,6 +72,31 @@ describe('Equihash', function() {
       done();
     });
   });
+  it('should fail', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.nonce);
+      assert(proof.value);
+
+      console.log('Proper Proof Value', proof.value);
+
+      proof.value = Buffer.from('apple', 'base64');
+
+      console.log('Bad Proof Value', proof.value);
+      console.log('Verify:', equihash.verify(input, proof));
+      assert(!equihash.verify(input, proof));
+      done();
+    });
+  });
   it('should fail to verify with an alternate input', function(done) {
     const options = {
       n: 90,
