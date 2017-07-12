@@ -1,0 +1,12 @@
+*.log
+*.py[co]
+*.sw[nop]
+*~
+.project
+.settings
+TAGS
+bower_components
+coverage
+node_modules
+reports
+build
