@@ -13,13 +13,13 @@ describe('Equihash', function() {
       crypto.createHash('sha256').update('hello world', 'utf8').digest();
 
     equihash.solve(input, options, (err, proof) => {
-      assert(err === null);
-      assert(proof.n === options.n);
-      assert(proof.k === options.k);
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
       const b64proof = Buffer.from(proof.value).toString('base64');
-      assert(b64proof === '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAAkKwAATXcAABVPAADecwAAkC0AADSkAAAFDgAAfiMAAA8HAAAdzAAAclYAAAt5AAAynwAABOYAAGsVAAANiwAAKF0AAJuLAADAGwAAy5cAAOQIAAByGwAAesQAAKDnAAA=');
+      assert.equal(b64proof, '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAAkKwAATXcAABVPAADecwAAkC0AADSkAAAFDgAAfiMAAA8HAAAdzAAAclYAAAt5AAAynwAABOYAAGsVAAANiwAAKF0AAJuLAADAGwAAy5cAAOQIAAByGwAAesQAAKDnAAA=');
       done();
     });
   });
@@ -31,9 +31,9 @@ describe('Equihash', function() {
     const input = crypto.randomBytes(128);
 
     equihash.solve(input, options, (err, proof) => {
-      assert(err === null);
-      assert(proof.n === options.n);
-      assert(proof.k === options.k);
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
       done();
@@ -47,9 +47,9 @@ describe('Equihash', function() {
     const input = crypto.randomBytes(1);
 
     equihash.solve(input, options, (err, proof) => {
-      assert(err === null);
-      assert(proof.n === options.n);
-      assert(proof.k === options.k);
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
       done();
@@ -64,9 +64,9 @@ describe('Equihash', function() {
       crypto.createHash('sha256').update('hello world', 'utf8').digest();
 
     equihash.solve(input, options, (err, proof) => {
-      assert(err === null);
-      assert(proof.n === options.n);
-      assert(proof.k === options.k);
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
       assert(equihash.verify(input, proof));
@@ -82,9 +82,9 @@ describe('Equihash', function() {
       crypto.createHash('sha256').update('hello world', 'utf8').digest();
 
     equihash.solve(input, options, (err, proof) => {
-      assert(err === null);
-      assert(proof.n === options.n);
-      assert(proof.k === options.k);
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
       proof.value[0] = 0;
