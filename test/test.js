@@ -68,11 +68,12 @@ describe('Equihash', function() {
       assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
+      //console.log('Proper Proof Length', proof.value.length);
       assert(equihash.verify(input, proof));
       done();
     });
   });
-  it('should fail', function(done) {
+  it('should fail to verify a proof with input < k', function(done) {
     const options = {
       n: 90,
       k: 5
@@ -86,13 +87,11 @@ describe('Equihash', function() {
       assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
-
-      console.log('Proper Proof Value', proof.value);
-
-      proof.value = Buffer.from('apple', 'base64');
-
-      console.log('Bad Proof Value', proof.value);
-      console.log('Verify:', equihash.verify(input, proof));
+      //console.log('Proper Proof Value', proof.value);
+      //console.log('Proper Proof Length', proof.value.length);
+      proof.value = Buffer.from('abcde', 'base64');
+      //console.log('Bad Proof Value', proof.value);
+      //console.log('Verify:', equihash.verify(input, proof));
       assert(!equihash.verify(input, proof));
       done();
     });
