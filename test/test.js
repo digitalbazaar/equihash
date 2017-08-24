@@ -1,6 +1,6 @@
 const assert = require('assert');
 const crypto = require('crypto');
-const equihash = require('..')('khovratovich');
+const equihash = require('..');
 
 describe('Equihash', function() {
   it('should generate a proof', function(done) {

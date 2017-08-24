@@ -15,6 +15,9 @@
   "scripts": {
     "test": "mocha -t 30000"
   },
+  "engines": {
+    "node": ">=6.0.0"
+  },
   "dependencies": {
     "bindings": "^1.2.1",
     "nan": "^2.6.2"

@@ -20,7 +20,7 @@ npm install equihash
 
 ## Usage Example
 ```javascript
-const equihash = require('equihash')('khovratovich');
+const equihash = require('equihash');
 
 // input seed for equihash (up to 512 bits)
 const input = crypto.createHash('sha256').update('test1234', 'utf8').digest();
@@ -37,6 +37,20 @@ equihash.solve(input, options, (err, proof) => {
   console.log('Equihash proof:', proof)
   console.log('Valid proof? ', equihash.verify(input, proof));
 });
+```
+
+Use a specific Equihash engine:
+```javascript
+const equihash = require('equihash').engine('...');
+// ...
+```
+
+By default the 'khovratovich' engien is used. To set a different default
+engine:
+```javascript
+const equihash = require('equihash');
+equihash.engine.default = '...';
+// ...
 ```
 
 ## Test Suite
