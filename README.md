@@ -1,5 +1,6 @@
 # Equihash Proof of Work for Node
 
+[![Build Status](https://travis-ci.org/digitalbazaar/equihash.png?branch=master)](https://travis-ci.org/digitalbazaar/equihash)
 [![Build Status](https://ci.digitalbazaar.com/buildStatus/icon?job=equihash)](https://ci.digitalbazaar.com/job/equihash)
 
 Equihash is a tunable asymmetric proof of work algorithm where it is difficult
