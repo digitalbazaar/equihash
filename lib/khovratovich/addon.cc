@@ -6,6 +6,7 @@
  * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
  ********************************************************************/
 
+#include <arpa/inet.h>
 #include <nan.h>
 //#include "addon.h"   // NOLINT(build/include)
 #include "pow.h"  // NOLINT(build/include)
@@ -53,8 +54,15 @@ class EquihashSolutionWorker : public AsyncWorker {
   void HandleOKCallback () {
      HandleScope scope;
      Local<Object> obj = Nan::New<Object>();
+
+     // to big-endian order
+     std::vector<Input> beInputs(solution.size());
+     for(size_t i = 0; i < solution.size(); i++) {
+       beInputs[i] = htonl(solution[i]);
+     }
+
      Local<Object> proofValue =
-       Nan::CopyBuffer((const char*)&solution[0], solution.size() * 4)
+       Nan::CopyBuffer((const char*)&beInputs[0], beInputs.size() * 4)
          .ToLocalChecked();
 
      //printhex("solution COPY", &solution[0], solution.size());
@@ -138,9 +146,11 @@ NAN_METHOD(Verify) {
 
    // initialize the proof object
    Seed seed(seedBuffer, seedBufferLength);
-   std::vector<Input> inputs;
-   inputs.resize(inputBufferLength,0);
-   std::copy(inputBuffer, inputBuffer + inputBufferLength, inputs.begin());
+   std::vector<Input> inputs(inputBufferLength);
+   // to big-endian order
+   for(size_t i = 0; i < inputs.size(); i++) {
+     inputs[i] = ntohl(inputBuffer[i]);
+   }
    Proof p(n, k, seed, nonce, inputs);
 
    // check the proof

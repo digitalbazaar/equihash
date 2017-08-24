@@ -18,7 +18,7 @@ describe('Equihash', function() {
       assert(proof.nonce);
       assert(proof.value);
       const b64proof = Buffer.from(proof.value).toString('base64');
-      assert.equal(b64proof, '+QMAADAHAADgFAAAoP0AAKgpAAAYQQAAiQ0AALgSAAAkKwAATXcAABVPAADecwAAkC0AADSkAAAFDgAAfiMAAA8HAAAdzAAAclYAAAt5AAAynwAABOYAAGsVAAANiwAAKF0AAJuLAADAGwAAy5cAAOQIAAByGwAAesQAAKDnAAA=');
+      assert.equal(b64proof, 'AAAD+QAABzAAABTgAAD9oAAAKagAAEEYAAANiQAAErgAACskAAB3TQAATxUAAHPeAAAtkAAApDQAAA4FAAAjfgAABw8AAMwdAABWcgAAeQsAAJ8yAADmBAAAFWsAAIsNAABdKAAAi5sAABvAAACXywAACOQAABtyAADEegAA56A=');
       done();
     });
   });
@@ -130,7 +130,11 @@ describe('Equihash', function() {
       assert.equal(proof.k, options.k);
       assert(proof.nonce);
       assert(proof.value);
-      proof.value[0] = 0;
+      // corrupt first uint32
+      proof.value[0] = 0xde;
+      proof.value[1] = 0xad;
+      proof.value[2] = 0xbe;
+      proof.value[3] = 0xef;
       assert(!equihash.verify(input, proof));
       done();
     });
