@@ -139,4 +139,43 @@ describe('Equihash', function() {
       done();
     });
   });
+  it('should fail solve with k<1', function(done) {
+    const options = {
+      n: 90,
+      k: 0
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should fail solve with k>7', function(done) {
+    const options = {
+      n: 90,
+      k: 8
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should fail solve with invalid n/(k+1) > 32', function(done) {
+    const options = {
+      n: 257,
+      k: 7
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
 });
