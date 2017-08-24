@@ -15,8 +15,8 @@ npm install equihash
 ```
 
 ## The Equihash API
-- solve(input, options, callback(err, proof))
-- verify(input, proof)
+- `solve(input, options, callback(err, proof))`
+- `verify(input, proof, callback(err, verified))`
 
 ## Usage Example
 ```javascript
@@ -35,7 +35,14 @@ equihash.solve(input, options, (err, proof) => {
   }
 
   console.log('Equihash proof:', proof)
-  console.log('Valid proof? ', equihash.verify(input, proof));
+
+  equihash.verify(proof, (err, verified) => {
+    if(err) {
+      return console.log('Failed to verify proof:', err);
+    }
+
+    console.log('Valid proof? ', verified);
+  });
 });
 ```
 
@@ -57,5 +64,5 @@ equihash.engine.default = '...';
 
 ```
 npm install
-npm run test
+npm test
 ```

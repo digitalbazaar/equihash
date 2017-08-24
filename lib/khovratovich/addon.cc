@@ -30,11 +30,11 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-class EquihashSolutionWorker : public AsyncWorker {
+class EquihashSolveWorker : public AsyncWorker {
  public:
-  EquihashSolutionWorker(const unsigned n, const unsigned k, Seed seed, Callback *callback)
+  EquihashSolveWorker(const unsigned n, const unsigned k, Seed seed, Callback *callback)
     : AsyncWorker(callback), n(n), k(k), seed(seed) {}
-  ~EquihashSolutionWorker() {}
+  ~EquihashSolveWorker() {}
 
   // Executed inside the worker-thread.
   // It is not safe to access V8, or V8 data structures
@@ -53,7 +53,7 @@ class EquihashSolutionWorker : public AsyncWorker {
   // so it is safe to use V8 again
   void HandleOKCallback () {
      HandleScope scope;
-     Local<Object> obj = Nan::New<Object>();
+     Local<Object> obj = New<Object>();
 
      // to big-endian order
      std::vector<Input> beInputs(solution.size());
@@ -88,6 +88,39 @@ class EquihashSolutionWorker : public AsyncWorker {
   std::vector<Input> solution;
 };
 
+class EquihashVerifyWorker : public AsyncWorker {
+ public:
+  EquihashVerifyWorker(Proof proof, Callback *callback)
+    : AsyncWorker(callback), proof(proof) {}
+  ~EquihashVerifyWorker() {}
+
+  // Executed inside the worker-thread.
+  // It is not safe to access V8, or V8 data structures
+  // here, so everything we need for input and output
+  // should go on `this`.
+  void Execute () {
+    verified = proof.Test();
+  }
+
+  // Executed when the async work is complete
+  // this function will be run inside the main event loop
+  // so it is safe to use V8 again
+  void HandleOKCallback () {
+     HandleScope scope;
+
+     Local<Value> argv[] = {
+        Null(),
+        New(verified)
+     };
+
+     callback->Call(2, argv);
+  }
+
+  private:
+  Proof proof;
+  bool verified;
+};
+
 NAN_METHOD(Solve) {
    // ensure first argument is an object
    if(!info[0]->IsObject()) {
@@ -115,7 +148,7 @@ NAN_METHOD(Solve) {
 
    Seed seed(seedBuffer, bufferLength);
 
-   AsyncQueueWorker(new EquihashSolutionWorker(n, k, seed, callback));
+   AsyncQueueWorker(new EquihashSolveWorker(n, k, seed, callback));
 }
 
 NAN_METHOD(Verify) {
@@ -125,6 +158,7 @@ NAN_METHOD(Verify) {
       return;
    }
 
+   Callback *callback = new Callback(info[1].As<Function>());
    // unbundle all data needed to check the proof
    Handle<Object> object = Handle<Object>::Cast(info[0]);
    Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
@@ -153,8 +187,7 @@ NAN_METHOD(Verify) {
    }
    Proof p(n, k, seed, nonce, inputs);
 
-   // check the proof
-   info.GetReturnValue().Set(p.Test());
+   AsyncQueueWorker(new EquihashVerifyWorker(p, callback));
 }
 
 NAN_MODULE_INIT(InitAll) {

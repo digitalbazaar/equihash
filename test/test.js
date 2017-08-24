@@ -69,8 +69,11 @@ describe('Equihash', function() {
       assert(proof.nonce);
       assert(proof.value);
       //console.log('Proper Proof Length', proof.value.length);
-      assert(equihash.verify(input, proof));
-      done();
+      equihash.verify(input, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(verified);
+        done();
+      });
     });
   });
   it('should fail to verify a proof with input < k', function(done) {
@@ -92,8 +95,10 @@ describe('Equihash', function() {
       proof.value = Buffer.from('abcde', 'base64');
       //console.log('Bad Proof Value', proof.value);
       //console.log('Verify:', equihash.verify(input, proof));
-      assert(!equihash.verify(input, proof));
-      done();
+      equihash.verify(input, proof, (err, verified) => {
+        assert(err);
+        done();
+      });
     });
   });
   it('should fail to verify with an alternate input', function(done) {
@@ -112,8 +117,11 @@ describe('Equihash', function() {
       assert(proof.value);
       const inputAlternate = crypto.createHash('sha256')
         .update('goodbye cruel world', 'utf8').digest();
-      assert(!equihash.verify(inputAlternate, proof));
-      done();
+      equihash.verify(inputAlternate, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(!verified);
+        done();
+      });
     });
   });
   it('should fail to verify an invalid proof', function(done) {
@@ -135,8 +143,11 @@ describe('Equihash', function() {
       proof.value[1] = 0xad;
       proof.value[2] = 0xbe;
       proof.value[3] = 0xef;
-      assert(!equihash.verify(input, proof));
-      done();
+      equihash.verify(input, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(!verified);
+        done();
+      });
     });
   });
   it('should fail solve with k<1', function(done) {
@@ -176,6 +187,58 @@ describe('Equihash', function() {
     equihash.solve(input, options, (err, proof) => {
       assert(err);
       done();
+    });
+  });
+  it('should fail verify with k<1', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert.ifError(err);
+      proof.k = 0;
+      equihash.verify(input, proof, (err, verified) => {
+        assert(err);
+        done();
+      });
+    });
+  });
+  it('should fail verify with k>7', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert.ifError(err);
+      proof.k = 8;
+      equihash.verify(input, proof, (err, verified) => {
+        assert(err);
+        done();
+      });
+    });
+  });
+  it('should fail verify with invalid n/(k+1) > 32', function(done) {
+    const options = {
+      n: 90,
+      k: 5
+    };
+    const input =
+      crypto.createHash('sha256').update('hello world', 'utf8').digest();
+
+    equihash.solve(input, options, (err, proof) => {
+      assert.ifError(err);
+      proof.n = 257;
+      proof.k = 7;
+      equihash.verify(input, proof, (err, verified) => {
+        assert(err);
+        done();
+      });
     });
   });
 });
