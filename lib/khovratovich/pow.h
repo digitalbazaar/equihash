@@ -1,6 +1,7 @@
-/*Code by Dmitry Khovratovich, 2016
-CC0 license
-*/
+/**
+ * Code by Dmitry Khovratovich, 2016
+ * CC0 license
+ */
 
 #ifndef __POW
 #define __POW
@@ -11,16 +12,16 @@ CC0 license
 #include <cstdio>
 
 
-const size_t SEED_LENGTH=16; //Length of seed in dwords ;
-const size_t NONCE_LENGTH=24; //Length of nonce in bytes;
+const size_t SEED_LENGTH = 16; //Length of seed in dwords ;
+const size_t NONCE_LENGTH = 24; //Length of nonce in bytes;
 const int MAX_NONCE = 0xFFFFF;
 const int MAX_N = 32; //Max length of n in bytes, should not exceed 32
 const int LIST_LENGTH = 5;
-const unsigned FORK_MULTIPLIER=3; //Maximum collision factor
+const unsigned FORK_MULTIPLIER = 3; //Maximum collision factor
 
 /* The block used to initialize the PoW search
-   @v actual values
-*/
+ * @v actual values
+ */
 
 /*
 static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
@@ -60,16 +61,12 @@ public:
 };
 
 /* Different nonces for PoW search
-   @v actual values
-   */
+ * @v actual values
+ */
 typedef uint32_t Nonce;
 typedef uint32_t Input;
 
-/*Actual proof of work
-*
-*
-*
-*/
+/* Actual proof of work */
 struct Proof{
     const unsigned n;
     const unsigned k;
@@ -102,10 +99,9 @@ public:
     Fork(Input r1, Input r2) : ref1(r1), ref2(r2) {};
 };
 
-/*Algorithm class for creating proof
-  Assumes that n/(k+1) <=32
-*
-*/
+/* Algorithm class for creating proof
+ * Assumes that n/(k+1) <=32
+ */
 class Equihash{
     std::vector<std::vector<Tuple>> tupleList;
     std::vector<unsigned> filledList;
