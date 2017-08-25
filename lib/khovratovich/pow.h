@@ -44,11 +44,8 @@ public:
           v.resize(SEED_LENGTH, x);
 	}
 	explicit Seed(const unsigned* data, unsigned length){
-	  unsigned copyLength = SEED_LENGTH;
+	  unsigned copyLength = std::min(SEED_LENGTH, length);
     v.resize(SEED_LENGTH,0);
-    if(length <= SEED_LENGTH) {
-      copyLength = length;
-    }
     std::copy(data, data + copyLength, v.begin());
     //printhex("seed", &v[0], SEED_LENGTH);
 	}
