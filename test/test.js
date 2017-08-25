@@ -176,7 +176,7 @@ describe('Equihash', function() {
       done();
     });
   });
-  it('should fail solve with invalid n/(k+1) > 32', function(done) {
+  it('should fail solve with n/(k+1) > 32', function(done) {
     const options = {
       n: 257,
       k: 7
@@ -223,7 +223,7 @@ describe('Equihash', function() {
       });
     });
   });
-  it('should fail verify with invalid n/(k+1) > 32', function(done) {
+  it('should fail verify with n/(k+1) > 32', function(done) {
     const options = {
       n: 90,
       k: 5
