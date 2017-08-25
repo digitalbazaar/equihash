@@ -11,8 +11,8 @@ CC0 license
 #include <cstdio>
 
 
-const int SEED_LENGTH=16; //Length of seed in dwords ;
-const int NONCE_LENGTH=24; //Length of nonce in bytes;
+const size_t SEED_LENGTH=16; //Length of seed in dwords ;
+const size_t NONCE_LENGTH=24; //Length of nonce in bytes;
 const int MAX_NONCE = 0xFFFFF;
 const int MAX_N = 32; //Max length of n in bytes, should not exceed 32
 const int LIST_LENGTH = 5;
