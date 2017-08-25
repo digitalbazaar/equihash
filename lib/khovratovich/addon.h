@@ -1,9 +1,10 @@
 /*********************************************************************
- * NAN - Native Abstractions for Node.js
+ * Equihash addon for Node.js
  *
- * Copyright (c) 2017 NAN contributors
+ * Copyright (c) 2017 Digital Bazaar, Inc.
  *
- * MIT License <https://github.com/nodejs/nan/blob/master/LICENSE.md>
+ * MIT License
+ * <https://github.com/digitalbazaar/equihash/blob/master/LICENSE>
  ********************************************************************/
 
 #ifndef EQUIHASH_KHOVRATOVICH_ADDON_H_
@@ -14,4 +15,4 @@
 NAN_METHOD(Solve);
 NAN_METHOD(Verify);
 
-#endif  // EQUIHASH_KHOVRATOVICH_ADDON_H_
+#endif // EQUIHASH_KHOVRATOVICH_ADDON_H_
