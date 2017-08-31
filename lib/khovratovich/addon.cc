@@ -1,5 +1,6 @@
 /*********************************************************************
- * Equihash addon for Node.js
+ * Equihash for Node.js.
+ * Node.js addon.
  *
  * Copyright (c) 2017 Digital Bazaar, Inc.
  *

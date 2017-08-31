@@ -1,3 +1,12 @@
+/**
+ * Equihash for Node.js.
+ * tests.
+ *
+ * Copyright (c) 2017 Digital Bazaar, Inc.
+ *
+ * MIT License
+ * <https://github.com/digitalbazaar/equihash/blob/master/LICENSE>
+ */
 const assert = require('assert');
 const crypto = require('crypto');
 const equihash = require('..');
