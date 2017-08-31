@@ -35,7 +35,7 @@ static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
 }
 */
 
-class Seed{
+class Seed {
     std::vector<uint32_t> v;
 public:
     Seed(){
@@ -67,7 +67,7 @@ typedef uint32_t Nonce;
 typedef uint32_t Input;
 
 /* Actual proof of work */
-struct Proof{
+struct Proof {
     const unsigned n;
     const unsigned k;
     const Seed seed;
@@ -102,7 +102,7 @@ public:
 /* Algorithm class for creating proof
  * Assumes that n/(k+1) <=32
  */
-class Equihash{
+class Equihash {
     std::vector<std::vector<Tuple>> tupleList;
     std::vector<unsigned> filledList;
     std::vector<Proof> solutions;
