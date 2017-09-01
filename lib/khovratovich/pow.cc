@@ -161,17 +161,39 @@ Proof Equihash::FindProof(){
         //    n, k, kbytes,
         //    mcycles_d);
 
-        //Duplicate check
-        for (unsigned i = 0; i < solutions.size(); ++i) {
-            auto vec = solutions[i].inputs;
+        // check for a valid solution
+        for (size_t i = 0; i < solutions.size(); ++i) {
+            Proof &proof = solutions[i];
+
+            // distinct indices check
+            auto vec = proof.inputs;
             std::sort(vec.begin(), vec.end());
             bool dup = false;
-            for (unsigned k = 0; k < vec.size() - 1; ++k) {
-                if (vec[k] == vec[k + 1])
+            for (size_t k = 0; !dup && k < vec.size() - 1; ++k) {
+                if (vec[k] == vec[k + 1]) {
                     dup = true;
+                }
             }
-            if (!dup)
-                return solutions[i];
+
+            if (dup)
+                continue;
+
+            // order tree
+            auto inputs = proof.inputs;
+            for (size_t level = 0; level < proof.k; ++level) {
+                size_t stride = 1 << level;
+                for (size_t j = 0; j < inputs.size(); j += (2 * stride)) {
+                    if (inputs[j] >= inputs[j + stride]) {
+                        // swap branches
+                        for (size_t si = 0; si < stride; ++si) {
+                            auto tmp = inputs[j + si];
+                            inputs[j + si] = inputs[j + stride + si];
+                            inputs[j + stride + si] = tmp;
+                        }
+                    }
+                }
+            }
+            return Proof(proof.n, proof.k, proof.seed, proof.nonce, inputs);
         }
     }
     return Proof(n, k, seed, nonce, std::vector<uint32_t>());
@@ -206,5 +228,5 @@ bool Proof::Test()
         }
         printf("%i\n", b);
     }*/
-    return b;
+    return b && inputs.size()!=0;
 }
