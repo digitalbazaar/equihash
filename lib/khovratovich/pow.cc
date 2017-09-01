@@ -185,11 +185,10 @@ Proof Equihash::FindProof(){
                 for (size_t j = 0; j < inputs.size(); j += (2 * stride)) {
                     if (inputs[j] >= inputs[j + stride]) {
                         // swap branches
-                        for (size_t si = 0; si < stride; ++si) {
-                            auto tmp = inputs[j + si];
-                            inputs[j + si] = inputs[j + stride + si];
-                            inputs[j + stride + si] = tmp;
-                        }
+                        std::swap_ranges(
+                                inputs.begin() + j,
+                                inputs.begin() + j + stride,
+                                inputs.begin() + j + stride);
                     }
                 }
             }
