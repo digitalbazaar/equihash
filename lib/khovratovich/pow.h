@@ -39,12 +39,12 @@ class Seed {
     std::vector<uint32_t> v;
 public:
     Seed(){
-        v.resize(SEED_LENGTH,0);
+        v.resize(SEED_LENGTH, 0);
     }
     explicit Seed(uint32_t x){
         v.resize(SEED_LENGTH, x);
     }
-    explicit Seed(const unsigned* data, unsigned length){
+    explicit Seed(const unsigned* data, size_t length){
         unsigned copyLength = std::min(SEED_LENGTH, length);
         v.resize(SEED_LENGTH,0);
         std::copy(data, data + copyLength, v.begin());
