@@ -4,9 +4,12 @@ const crypto = require('crypto');
 
 const api = {
   // vectors to test
-  tests: []
+  tests: [],
+  // vectors to benchmark
+  benchmarks: []
 };
 const t = api.tests;
+const b = api.benchmarks;
 
 module.exports = api;
 
@@ -59,6 +62,7 @@ function customTests() {
     nonce: 2,
     inputs: [arrayFromHexArray('20e9  1396c  719e  175d9  326b  16c4a  62f7  7bc9  2760  cd1e  129fc  15899  f7c3  17082  17add  1efa4  6993  18388  17964  1c6e3  e156  152b4  10bae  11973  7a51  aba9  91bd  dde1  c85f  1dfff  10094  1bed3'.split('  '))]
   });
+  b.push(t[t.length-1]);
 
   t.push({
     label: 'custom n=96,k=4',
@@ -77,6 +81,7 @@ function customTests() {
     nonce: 595,
     inputs: [arrayFromHexArray('458  12f4b  fd85  1aa43  633d  1299f  a173  1928f  11ca  1ca17  1541c  1d430  4283  139b2  1bf1c  1c528  477a  11027  4d81  1e39d  5a3a  1dc98  706e  dfea  8a8f  1ea95  d251  192f2  e869  1fb07  19393  1af44  14f2  19ca2  17b80  1845c  3b22  1db24  c37d  cad2  25a1  b739  ae17  125b9  b046  147da  b12a  1af43  8589  1f2ba  1543e  1ba68  a220  f9b9  dbf1  100c8  b491  168aa  15909  16ad0  1107b  1e5bd  19a84  1b2b9  46e  1d491  7c3b  186df  33e2  19415  4521  da80  acc  35ea  5db7  c1da  2527  5b36  d179  d397  1641  19722  1596b  18225  1ff4  1de18  966e  16023  18f8  1fa32  12152  19fa4  26d6  19a9b  1a064  1c656  2528  5949  126ae  1ff04  7fed  fcba  f3ed  153e5  4d01  19ed9  dae6  1d4c1  b59f  14c93  c5ce  1514d  48be  8b47  6850  7084  b2f0  1cb5f  cb20  1714e  6bc2  1570f  cb8e  17e6d  e02d  1085f  1a4a8  1dd92'.split('  '))]
   });
+  b.push(t[t.length-1]);
 
   t.push({
     label: 'custom n=90,k=4',
@@ -86,6 +91,7 @@ function customTests() {
     nonce: 2,
     inputs: [arrayFromHexArray('1a10  38d73  665ff  76007  205b3  5d820  3df0f  6f58f  2c655  3cc14  3c13f  727b1  46230  4fbb5  75cbc  7f37a'.split('  '))]
   });
+  b.push(t[t.length-1]);
 
   t.push({
     label: 'custom n=90,k=5',
@@ -95,6 +101,7 @@ function customTests() {
     nonce: 5,
     inputs: [arrayFromHexArray('2ce  1d7c  a592  eaa0  232c  9b7b  379a  fbd0  2ce2  7e1d  438b  d621  e23f  efa9  eb30  f96d  146e  437f  22fb  2996  5a0f  649b  bdda  f66a  1636  220f  96de  bfd9  367e  f067  5437  eab4'.split('  '))]
   });
+  b.push(t[t.length-1]);
 
   t.push({
     label: 'custom n=90,k=4, not distinct',
