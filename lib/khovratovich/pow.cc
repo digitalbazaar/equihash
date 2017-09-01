@@ -30,7 +30,7 @@ using namespace std;
 
 void Equihash::InitializeMemory()
 {
-    uint32_t  tuple_n = ((uint32_t)1) << (n / (k + 1));
+    uint32_t tuple_n = ((uint32_t)1) << (n / (k + 1));
     Tuple default_tuple(k); // k blocks to store (one left for index)
     std::vector<Tuple> def_tuples(LIST_LENGTH, default_tuple);
     tupleList = std::vector<std::vector<Tuple>>(tuple_n, def_tuples);
