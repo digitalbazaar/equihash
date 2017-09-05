@@ -53,7 +53,7 @@ Verify a proof for a given seed.
 ```javascript
 const equihash = require('equihash');
 
-// seed for equihash
+// seed for equihash (up to 512 bits)
 const seed = crypto.createHash('sha256').update('test1234', 'utf8').digest();
 const options = {
   n: 90,
