@@ -90,6 +90,18 @@ equihash.engine.default = '...';
 // ...
 ```
 
+## Engines
+
+`khovratovich`:
+- Uses a modified reference equihash implementation.
+- Handles seed value of any length.
+- Allows specifying the blake2b personal data.
+- Verifies nonces of any length.
+- Solver can generate nonce of any length but will only mutate first few bytes.
+- Solution of unsigned 32 bit values are processed as little endian values.
+- Note: Not strictly compatible with zcash implementation due to internal buffer
+  issues.
+
 ## Test Suite
 
 ```
