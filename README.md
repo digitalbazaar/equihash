@@ -98,3 +98,9 @@ equihash.engine.default = '...';
 npm install
 npm test
 ```
+
+## Benchmark
+
+```
+npm run benchmark
+```
