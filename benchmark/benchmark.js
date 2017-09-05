@@ -15,11 +15,11 @@ const vectors = require('../test/test-vectors');
 
 const suite = new Benchmark.Suite;
 
-function _input(s='') {
+function _seed(s='') {
   return crypto.createHash('sha256').update('hello world' + s, 'utf8').digest();
 }
 
-let input;
+let seed;
 let i;
 
 // test deferred test overhead
@@ -48,7 +48,7 @@ vectors.benchmarks.forEach(test => {
           n: test.n,
           k: test.k,
           nonce: test.nonce,
-          value: vectors.bufferFromArray(inputs)
+          solution: vectors.bufferFromArray(inputs)
         };
         equihash.verify(new Uint8Array(test.seed), proof, (err, verified) => {
           deferred.resolve();
@@ -61,28 +61,28 @@ vectors.benchmarks.forEach(test => {
 // test solve
 suite
   .add({
-    name: 'solve n=90,k=5,inputs=1',
+    name: 'solve n=90,k=5,seeds=1',
     defer: true,
     setup: () => {
-      input = _input();
+      seed = _seed();
     },
     fn: deferred => {
       const options = {
         n: 90,
         k: 5
       };
-      equihash.solve(input, options, (err, proof) => {
+      equihash.solve(seed, options, (err, proof) => {
         deferred.resolve();
       });
     }
   })
   .add({
-    name: 'solve n=90,k=5,inputs=100',
+    name: 'solve n=90,k=5,seeds=100',
     defer: true,
     setup: () => {
-      input = [];
+      seeds = [];
       for(i = 0; i < 100; ++i) {
-        input.push(_input(i.toString()));
+        seeds.push(_seed(i.toString()));
       }
       i = 0;
     },
@@ -91,7 +91,7 @@ suite
         n: 90,
         k: 5
       };
-      equihash.solve(input[i], options, (err, proof) => {
+      equihash.solve(seeds[i], options, (err, proof) => {
         i = (i + 1) % 100;
         deferred.resolve();
       });
@@ -101,14 +101,14 @@ suite
     name: 'solve n=96,k=5',
     defer: true,
     setup: () => {
-      input = _input();
+      seed = _seed();
     },
     fn: deferred => {
       const options = {
         n: 96,
         k: 5
       };
-      equihash.solve(input, options, (err, proof) => {
+      equihash.solve(seed, options, (err, proof) => {
         deferred.resolve();
       });
     }

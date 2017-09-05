@@ -33,6 +33,16 @@ function bufferSeedNx32(value, n) {
   return new Buffer(a);
 }
 
+// buffer of n bytes with start data and remaining zeroed
+function bufferSeedData(data, n) {
+  if(data.length > n) {
+    throw new Error('Data input too large.');
+  }
+  const buffer = Buffer.alloc(n, 0);
+  data.copy(buffer);
+  return buffer;
+}
+
 // [int1, int2, ...] to buffer with big endian uint32_t
 api.bufferFromArray = function(data) {
   const a = new ArrayBuffer(data.length * 4);
@@ -177,7 +187,8 @@ function customTests() {
     label: 'custom n=90,k=5',
     n: 90,
     k: 5,
-    seed: crypto.createHash('sha256').update('hello world', 'utf8').digest(),
+    seed: bufferSeedData(
+      crypto.createHash('sha256').update('hello world', 'utf8').digest(), 64),
     nonce: 4,
     inputs: [[
       1017, 1840, 5344, 64928, 3465, 4792, 10664, 16664,

@@ -31,40 +31,16 @@ static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
     for(i = 0; i < buf_len; ++i)
     fprintf(stdout, "0x%08x%s", buf[i],
              ( i + 1 ) % 4 == 0 ? "\r\n" : " " );
-
 }
 */
-
-class Seed {
-    std::vector<uint32_t> v;
-public:
-    Seed(){
-        v.resize(SEED_LENGTH, 0);
-    }
-    explicit Seed(uint32_t x){
-        v.resize(SEED_LENGTH, x);
-    }
-    explicit Seed(const unsigned* data, size_t length){
-        unsigned copyLength = std::min(SEED_LENGTH, length);
-        v.resize(SEED_LENGTH,0);
-        std::copy(data, data + copyLength, v.begin());
-        //printhex("seed", &v[0], SEED_LENGTH);
-    }
-    Seed(const Seed&r){
-        v= r.v;
-    }
-    Seed& operator=(const Seed&r){
-        v = r.v;
-        return *this;
-    }
-    const uint32_t& operator[](unsigned i) const{ return v[i]; }
-};
 
 /* Different nonces for PoW search
  * @v actual values
  */
+typedef std::vector<uint8_t> Seed;
 typedef uint32_t Nonce;
 typedef uint32_t Input;
+typedef std::vector<uint32_t> Solution;
 
 /* Actual proof of work */
 struct Proof {
@@ -72,10 +48,11 @@ struct Proof {
     const unsigned k;
     const Seed seed;
     const Nonce nonce;
-    const std::vector<Input> inputs;
-    Proof(unsigned n_v, unsigned k_v, Seed I_v, Nonce V_v, std::vector<Input> inputs_v):
-        n(n_v), k(k_v), seed(I_v), nonce(V_v), inputs(inputs_v){};
-    Proof():n(0),k(1),seed(0),nonce(0),inputs(std::vector<Input>()) {};
+    const Solution solution;
+    Proof(unsigned n_v, unsigned k_v, Seed I_v, Nonce V_v, Solution solution_v):
+        n(n_v), k(k_v), seed(I_v), nonce(V_v), solution(solution_v) {};
+    Proof():
+        n(0), k(1), seed(Seed()), nonce(0), solution(Solution()) {};
 
     bool Test();
 };
@@ -100,7 +77,7 @@ public:
 };
 
 /* Algorithm class for creating proof
- * Assumes that n/(k+1) <=32
+ * Assumes that n/(k+1) <= 32
  */
 class Equihash {
     std::vector<std::vector<Tuple>> tupleList;
@@ -111,11 +88,13 @@ class Equihash {
     unsigned k;
     Seed seed;
     Nonce nonce;
+    uint32_t maxNonces;
 public:
     /*
        Initializes memory.
        */
-    Equihash(unsigned n_in, unsigned k_in, Seed s) :n(n_in), k(k_in), seed(s) {};
+    Equihash(unsigned n_in, unsigned k_in, Seed s, Nonce nonce, uint32_t maxNonces):
+        n(n_in), k(k_in), seed(s), nonce(nonce), maxNonces(maxNonces) {};
     ~Equihash() {};
     Proof FindProof();
     void FillMemory(uint32_t length);      //fill with hash
