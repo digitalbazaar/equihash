@@ -23,6 +23,7 @@ let seed;
 let i;
 
 // test deferred test overhead
+/*
 suite
   .add({
     name: 'noop not deferred',
@@ -36,6 +37,7 @@ suite
       deferred.resolve();
     }
   });
+*/
 
 // test verify
 vectors.benchmarks.forEach(test => {
