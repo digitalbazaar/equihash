@@ -42,8 +42,6 @@ Solve for a single solution.
 
 Verify a proof for a given seed.
 
-`seed`: buffer of bytes to use as a seed
-
 `proof`: same as output from `solve()`
 
 `options` (engine specific):
