@@ -388,6 +388,94 @@ describe('Equihash', function() {
       });
     });
   });
+  it('should get PERSONALBYTES', function(done) {
+    assert('PERSONALBYTES' in equihash);
+    done();
+  });
+  it('should verify a valid proof with personal bytes', function(done) {
+    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const options = {
+      n: 90,
+      k: 5,
+      personal
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.personal.equals(options.personal));
+      assert(proof.nonce);
+      assert(proof.solution);
+      equihash.verify(seed, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(verified);
+        done();
+      });
+    });
+  });
+  it('should fail to verify with bad personal bytes', function(done) {
+    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const options = {
+      n: 90,
+      k: 5,
+      personal
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.personal.equals(options.personal));
+      assert(proof.nonce);
+      assert(proof.solution);
+      proof.personal = Buffer.alloc(equihash.PERSONALBYTES, 2);
+      equihash.verify(seed, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(!verified);
+        done();
+      });
+    });
+  });
+  it('should fail to solve with too many personal bytes', function(done) {
+    const personal = Buffer.alloc(equihash.PERSONALBYTES + 1, 0);
+    const options = {
+      n: 90,
+      k: 5,
+      personal
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should fail to verify with too many personal bytes', function(done) {
+    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const options = {
+      n: 90,
+      k: 5,
+      personal
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.personal.equals(options.personal));
+      assert(proof.nonce);
+      assert(proof.solution);
+      proof.personal = Buffer.alloc(equihash.PERSONALBYTES + 1, 1);
+      equihash.verify(seed, proof, (err, verified) => {
+        assert(err);
+        done();
+      });
+    });
+  });
   it('should fail to verify a proof with input < k', function(done) {
     const options = {
       n: 90,

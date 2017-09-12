@@ -29,6 +29,8 @@ Solve for a single solution.
 - `nonceLength`: number of bytes of nonce data to find (optional)
 
 `options` (engine specific):
+- `personal`: buffer of "personal" bytes used in some blake2 initializations
+  (optional)
 - `nonce`: initial value of nonce (engine dependent type) (optional)
 - `maxNonces`: max number of nonces to check (optional)
 
@@ -45,7 +47,13 @@ Verify a proof for a given seed.
 `proof`: same as output from `solve()`
 
 `options` (engine specific):
-- None specified.
+- `personal`: buffer of "personal" bytes used in some blake2 initializations
+  (optional)
+
+`equihash.PERSONALBYTES`
+
+If supported for the current engine, get the the number of supported
+PERSONALBYTES for the blake2 implementations.  Often 16.
 
 ## Usage Example
 ```javascript

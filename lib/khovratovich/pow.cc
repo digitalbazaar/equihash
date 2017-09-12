@@ -6,6 +6,7 @@
 #include "pow.h"
 #include "blake/blake2.h"
 #include <algorithm>
+#include <cstring>
 #include <endian.h>
 
 /*
@@ -74,6 +75,9 @@ void Equihash::FillMemory(uint32_t length) //works for k<=7
         {0},
         {0}
     };
+    std::memcpy(
+            P.personal, personal.data(),
+            std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
     blake2b_init_param(state, &P);
     blake2b_update(state, seed.data(), seed.size());
     uint32_t _nonce = htole32(nonce);
@@ -135,7 +139,7 @@ void Equihash::ResolveCollisions(bool store) {
                 if (store) {  //last step
                     if (newIndex == 0) {//Solution
                         std::vector<Input> solution_inputs = ResolveTree(newFork);
-                        solutions.push_back(Proof(n, k, seed, nonce, solution_inputs));
+                        solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
                     }
                 }
                 else {         //Resolve
@@ -158,7 +162,7 @@ void Equihash::ResolveCollisions(bool store) {
     std::swap(filledList, newFilledList);
 }
 
-Proof Equihash::FindProof(){
+Proof Equihash::FindProof() {
     //FILE* fp = fopen("proof.log", "w+");
     //fclose(fp);
     for(uint32_t count = 0; count < maxNonces; ++count) {
@@ -214,11 +218,11 @@ Proof Equihash::FindProof(){
                     }
                 }
             }
-            return Proof(proof.n, proof.k, proof.seed, proof.nonce, solution);
+            return Proof(proof.n, proof.k, proof.personal, proof.seed, proof.nonce, solution);
         }
         nonce++;
     }
-    return Proof(n, k, seed, nonce, Solution());
+    return Proof(n, k, personal, seed, nonce, Solution());
 }
 
 bool Proof::Test()
@@ -240,6 +244,9 @@ bool Proof::Test()
         {0},
         {0}
     };
+    std::memcpy(
+            P.personal, personal.data(),
+            std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
     blake2b_init_param(state, &P);
     blake2b_update(state, seed.data(), seed.size());
     uint32_t _nonce = htole32(nonce);

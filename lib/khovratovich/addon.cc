@@ -35,8 +35,8 @@ using v8::Value;
 
 class EquihashSolveWorker : public AsyncWorker {
 public:
-    EquihashSolveWorker(const unsigned n, const unsigned k, Seed seed, uint32_t nonce, uint32_t maxNonces, Callback *callback)
-        : AsyncWorker(callback), n(n), k(k), seed(seed), nonce(nonce), maxNonces(maxNonces) {}
+    EquihashSolveWorker(Equihash equihash, Callback *callback)
+        : AsyncWorker(callback), equihash(equihash), proof() {}
     ~EquihashSolveWorker() {}
 
     // Executed inside the worker-thread.
@@ -44,10 +44,7 @@ public:
     // here, so everything we need for input and output
     // should go on `this`.
     void Execute () {
-        Equihash equihash(n, k, seed, nonce, maxNonces);
-        Proof p = equihash.FindProof();
-        nonce = p.nonce;
-        solution = p.solution;
+        proof = equihash.FindProof();
         //printhex("solution", &solution[0], solution.size());
     }
 
@@ -58,16 +55,24 @@ public:
         HandleScope scope;
         Local<Object> obj = New<Object>();
 
-        Local<Array> solutionValue = New<Array>(solution.size());
-        for (size_t i = 0; i < solution.size(); ++i) {
-            Set(solutionValue, i, New<Number>(solution[i]));
+        Local<Array> solutionValue = New<Array>(proof.solution.size());
+        for (size_t i = 0; i < proof.solution.size(); ++i) {
+            Set(solutionValue, i, New<Number>(proof.solution[i]));
         }
 
         //printhex("solution COPY", &solution[0], solution.size());
 
-        obj->Set(New("n").ToLocalChecked(), New(n));
-        obj->Set(New("k").ToLocalChecked(), New(k));
-        obj->Set(New("nonce").ToLocalChecked(), New(nonce));
+        obj->Set(New("n").ToLocalChecked(), New(proof.n));
+        obj->Set(New("k").ToLocalChecked(), New(proof.k));
+        obj->Set(New("personal").ToLocalChecked(),
+            Nan::CopyBuffer(
+                (const char *)proof.personal.data(), proof.personal.size())
+                .ToLocalChecked());
+        obj->Set(New("seed").ToLocalChecked(),
+            Nan::CopyBuffer(
+                (const char *)proof.seed.data(), proof.seed.size())
+                .ToLocalChecked());
+        obj->Set(New("nonce").ToLocalChecked(), New(proof.nonce));
         obj->Set(New("solution").ToLocalChecked(), solutionValue);
 
         Local<Value> argv[] = {
@@ -79,12 +84,8 @@ public:
     }
 
 private:
-    unsigned n;
-    unsigned k;
-    Seed seed;
-    Nonce nonce;
-    uint32_t maxNonces;
-    std::vector<Input> solution;
+    Equihash equihash;
+    Proof proof;
 };
 
 class EquihashVerifyWorker : public AsyncWorker {
@@ -136,6 +137,7 @@ NAN_METHOD(Solve) {
     Handle<Object> object = Handle<Object>::Cast(info[0]);
     Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
     Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
+    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
     Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
     Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
     Handle<Value> maxNoncesValue =
@@ -143,17 +145,22 @@ NAN_METHOD(Solve) {
 
     const unsigned n = To<uint32_t>(nValue).FromJust();
     const unsigned k = To<uint32_t>(kValue).FromJust();
+    uint8_t* personalBuffer = (uint8_t*)node::Buffer::Data(personalValue);
+    size_t personalBufferLength = node::Buffer::Length(personalValue);
     const uint32_t nonce = To<uint32_t>(nonceValue).FromJust();
     const uint32_t maxNonces = To<uint32_t>(maxNoncesValue).FromJust();
     size_t bufferLength = node::Buffer::Length(seedValue);
     uint8_t* seedBuffer = (uint8_t*)node::Buffer::Data(seedValue);
 
+    Equihash equihash(
+            n, k,
+            Personal(personalBuffer, personalBuffer + personalBufferLength),
+            Seed(seedBuffer, seedBuffer + bufferLength),
+            nonce, maxNonces);
+
     //printhex("seed", seedBuffer, bufferLength);
 
-    Seed seed(seedBuffer, seedBuffer + bufferLength);
-
-    AsyncQueueWorker(
-            new EquihashSolveWorker(n, k, seed, nonce, maxNonces, callback));
+    AsyncQueueWorker(new EquihashSolveWorker(equihash, callback));
 }
 
 NAN_METHOD(Verify) {
@@ -168,13 +175,16 @@ NAN_METHOD(Verify) {
     Handle<Object> object = Handle<Object>::Cast(info[0]);
     Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
     Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
+    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
     Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
     Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
     Handle<Array> solutionArray = Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
 
     const unsigned n = To<uint32_t>(nValue).FromJust();
     const unsigned k = To<uint32_t>(kValue).FromJust();
-    const unsigned nonce = To<uint32_t>(nonceValue).FromJust();
+    uint8_t* personalBuffer = (uint8_t*)node::Buffer::Data(personalValue);
+    size_t personalBufferLength = node::Buffer::Length(personalValue);
+    const uint32_t nonce = To<uint32_t>(nonceValue).FromJust();
     uint8_t* seedBuffer = (uint8_t*)node::Buffer::Data(seedValue);
     size_t seedBufferLength = node::Buffer::Length(seedValue);
 
@@ -182,14 +192,15 @@ NAN_METHOD(Verify) {
     //printhex("input", inputBuffer, inputBufferLength);
 
     // initialize the proof object
+    Personal personal(personalBuffer, personalBuffer + personalBufferLength);
     Seed seed(seedBuffer, seedBuffer + seedBufferLength);
     Solution solution(solutionArray->Length());
     for(size_t i = 0; i < solution.size(); ++i) {
         solution[i] = solutionArray->Get(i)->NumberValue();
     }
-    Proof p(n, k, seed, nonce, solution);
+    Proof proof(n, k, personal, seed, nonce, solution);
 
-    AsyncQueueWorker(new EquihashVerifyWorker(p, callback));
+    AsyncQueueWorker(new EquihashVerifyWorker(proof, callback));
 }
 
 NAN_MODULE_INIT(InitAll) {

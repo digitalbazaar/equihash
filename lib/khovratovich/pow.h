@@ -37,6 +37,7 @@ static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
 /* Different nonces for PoW search
  * @v actual values
  */
+typedef std::vector<uint8_t> Personal;
 typedef std::vector<uint8_t> Seed;
 typedef uint32_t Nonce;
 typedef uint32_t Input;
@@ -44,17 +45,29 @@ typedef std::vector<uint32_t> Solution;
 
 /* Actual proof of work */
 struct Proof {
-    const unsigned n;
-    const unsigned k;
-    const Seed seed;
-    const Nonce nonce;
-    const Solution solution;
-    Proof(unsigned n_v, unsigned k_v, Seed I_v, Nonce V_v, Solution solution_v):
-        n(n_v), k(k_v), seed(I_v), nonce(V_v), solution(solution_v) {};
+    unsigned n;
+    unsigned k;
+    Personal personal;
+    Seed seed;
+    Nonce nonce;
+    Solution solution;
+    Proof(unsigned n_v, unsigned k_v, Personal personal_v, Seed I_v, Nonce V_v, Solution solution_v):
+        n(n_v), k(k_v), personal(personal_v), seed(I_v), nonce(V_v), solution(solution_v) {};
+    Proof(const Proof &p):
+        n(p.n), k(p.k), personal(p.personal), seed(p.seed), nonce(p.nonce), solution(p.solution) {};
     Proof():
-        n(0), k(1), seed(Seed()), nonce(0), solution(Solution()) {};
-
+        n(0), k(0), personal(Personal(0)), seed(Seed(0)), nonce(Nonce(0)), solution(Solution(0)) {};
     bool Test();
+
+    Proof& operator=(const Proof &p) {
+        n = p.n;
+        k = p.k;
+        personal = p.personal;
+        seed = p.seed;
+        nonce = p.nonce;
+        solution = p.solution;
+        return *this;
+    }
 };
 
 class Tuple {
@@ -86,6 +99,7 @@ class Equihash {
     std::vector<std::vector<Fork>> forks;
     unsigned n;
     unsigned k;
+    Personal personal;
     Seed seed;
     Nonce nonce;
     uint32_t maxNonces;
@@ -93,8 +107,10 @@ public:
     /*
        Initializes memory.
        */
-    Equihash(unsigned n_in, unsigned k_in, Seed s, Nonce nonce, uint32_t maxNonces):
-        n(n_in), k(k_in), seed(s), nonce(nonce), maxNonces(maxNonces) {};
+    Equihash(unsigned n_in, unsigned k_in, Personal personal, Seed s, Nonce nonce, uint32_t maxNonces):
+        n(n_in), k(k_in), personal(personal), seed(s), nonce(nonce), maxNonces(maxNonces) {};
+    Equihash(const Equihash &eh):
+        n(eh.n), k(eh.k), personal(eh.personal), seed(eh.seed), nonce(eh.nonce), maxNonces(eh.maxNonces) {};
     ~Equihash() {};
     Proof FindProof();
     void FillMemory(uint32_t length);      //fill with hash
