@@ -37,8 +37,9 @@ Solve for a single solution.
 `proof`:
 - `n`: equihash `n` parameter
 - `k`: equihash `k` parameter
+- `personal`: buffer of bytes used for "personal" bytes (engine dependent, optional)
 - `nonce`: buffer of nonce bytes
-- `solution`: buffer of solution bytes for little endian unsigned 32 bit integers
+- `solution`: array of unsigned integers
 
 `verify(seed, proof, options, callback(err, verified))`
 
@@ -49,6 +50,7 @@ Verify a proof for a given seed.
 `options` (engine specific):
 - `personal`: buffer of "personal" bytes used in some blake2 initializations
   (optional)
+- `nonceLength`: number of bytes of nonce data if passing a number (4, optional)
 
 `equihash.PERSONALBYTES`
 
@@ -59,7 +61,7 @@ PERSONALBYTES for the blake2 implementations.  Often 16.
 ```javascript
 const equihash = require('equihash');
 
-// seed for equihash (up to 512 bits)
+// seed for equihash
 const seed = crypto.createHash('sha256').update('test1234', 'utf8').digest();
 const options = {
   n: 90,

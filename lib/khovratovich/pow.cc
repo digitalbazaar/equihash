@@ -80,8 +80,7 @@ void Equihash::FillMemory(uint32_t length) //works for k<=7
             std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
     blake2b_init_param(state, &P);
     blake2b_update(state, seed.data(), seed.size());
-    uint32_t _nonce = htole32(nonce);
-    blake2b_update(state, (uint8_t*)&_nonce, sizeof(uint32_t));
+    blake2b_update(state, nonce.data(), nonce.size());
 
     for (uint32_t i = 0; i < length; ++i) {
         // copy state
@@ -220,7 +219,9 @@ Proof Equihash::FindProof() {
             }
             return Proof(proof.n, proof.k, proof.personal, proof.seed, proof.nonce, solution);
         }
-        nonce++;
+        // increment nonce
+        // FIXME: this just finds 32 bit nonces
+        (*((uint32_t *)nonce.data()))++;
     }
     return Proof(n, k, personal, seed, nonce, Solution());
 }
@@ -249,8 +250,7 @@ bool Proof::Test()
             std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
     blake2b_init_param(state, &P);
     blake2b_update(state, seed.data(), seed.size());
-    uint32_t _nonce = htole32(nonce);
-    blake2b_update(state, (uint8_t*)&_nonce, sizeof(uint32_t));
+    blake2b_update(state, nonce.data(), nonce.size());
 
     for (size_t i = 0; i < solution.size(); ++i) {
         // copy state

@@ -68,11 +68,15 @@ public:
             Nan::CopyBuffer(
                 (const char *)proof.personal.data(), proof.personal.size())
                 .ToLocalChecked());
-        obj->Set(New("seed").ToLocalChecked(),
+        // TODO: add option to include seed in proof
+        //obj->Set(New("seed").ToLocalChecked(),
+        //    Nan::CopyBuffer(
+        //        (const char *)proof.seed.data(), proof.seed.size())
+        //        .ToLocalChecked());
+        obj->Set(New("nonce").ToLocalChecked(),
             Nan::CopyBuffer(
-                (const char *)proof.seed.data(), proof.seed.size())
+                (const char *)proof.nonce.data(), proof.nonce.size())
                 .ToLocalChecked());
-        obj->Set(New("nonce").ToLocalChecked(), New(proof.nonce));
         obj->Set(New("solution").ToLocalChecked(), solutionValue);
 
         Local<Value> argv[] = {
@@ -147,16 +151,18 @@ NAN_METHOD(Solve) {
     const unsigned k = To<uint32_t>(kValue).FromJust();
     uint8_t* personalBuffer = (uint8_t*)node::Buffer::Data(personalValue);
     size_t personalBufferLength = node::Buffer::Length(personalValue);
-    const uint32_t nonce = To<uint32_t>(nonceValue).FromJust();
-    const uint32_t maxNonces = To<uint32_t>(maxNoncesValue).FromJust();
-    size_t bufferLength = node::Buffer::Length(seedValue);
+    size_t seedBufferLength = node::Buffer::Length(seedValue);
     uint8_t* seedBuffer = (uint8_t*)node::Buffer::Data(seedValue);
+    size_t nonceBufferLength = node::Buffer::Length(nonceValue);
+    uint8_t* nonceBuffer = (uint8_t*)node::Buffer::Data(nonceValue);
+    const uint32_t maxNonces = To<uint32_t>(maxNoncesValue).FromJust();
 
     Equihash equihash(
             n, k,
             Personal(personalBuffer, personalBuffer + personalBufferLength),
-            Seed(seedBuffer, seedBuffer + bufferLength),
-            nonce, maxNonces);
+            Seed(seedBuffer, seedBuffer + seedBufferLength),
+            Nonce(nonceBuffer, nonceBuffer + nonceBufferLength),
+            maxNonces);
 
     //printhex("seed", seedBuffer, bufferLength);
 
@@ -184,7 +190,8 @@ NAN_METHOD(Verify) {
     const unsigned k = To<uint32_t>(kValue).FromJust();
     uint8_t* personalBuffer = (uint8_t*)node::Buffer::Data(personalValue);
     size_t personalBufferLength = node::Buffer::Length(personalValue);
-    const uint32_t nonce = To<uint32_t>(nonceValue).FromJust();
+    uint8_t* nonceBuffer = (uint8_t*)node::Buffer::Data(nonceValue);
+    size_t nonceBufferLength = node::Buffer::Length(nonceValue);
     uint8_t* seedBuffer = (uint8_t*)node::Buffer::Data(seedValue);
     size_t seedBufferLength = node::Buffer::Length(seedValue);
 
@@ -194,6 +201,7 @@ NAN_METHOD(Verify) {
     // initialize the proof object
     Personal personal(personalBuffer, personalBuffer + personalBufferLength);
     Seed seed(seedBuffer, seedBuffer + seedBufferLength);
+    Nonce nonce(nonceBuffer, nonceBuffer + nonceBufferLength);
     Solution solution(solutionArray->Length());
     for(size_t i = 0; i < solution.size(); ++i) {
         solution[i] = solutionArray->Get(i)->NumberValue();

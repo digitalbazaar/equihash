@@ -39,7 +39,7 @@ static void printhex(const char *title, const unsigned int *buf, size_t buf_len)
  */
 typedef std::vector<uint8_t> Personal;
 typedef std::vector<uint8_t> Seed;
-typedef uint32_t Nonce;
+typedef std::vector<uint8_t> Nonce;
 typedef uint32_t Input;
 typedef std::vector<uint32_t> Solution;
 
