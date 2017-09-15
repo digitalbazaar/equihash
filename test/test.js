@@ -248,10 +248,30 @@ describe('Equihash', function() {
     });
   });
   */
-  it('should verify a valid proof', function(done) {
+  it('should verify a valid proof n=90,k=5', function(done) {
     const options = {
       n: 90,
       k: 5
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert.ifError(err);
+      assert.equal(proof.n, options.n);
+      assert.equal(proof.k, options.k);
+      assert(proof.nonce);
+      assert(proof.solution);
+      equihash.verify(seed, proof, (err, verified) => {
+        assert.ifError(err);
+        assert(verified);
+        done();
+      });
+    });
+  });
+  it('should verify a valid proof n=64,k=3', function(done) {
+    const options = {
+      n: 64,
+      k: 3
     };
     const seed = _seed();
 

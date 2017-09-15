@@ -197,6 +197,17 @@ function customTests() {
       2276, 7026, 50298, 59296, 7104, 38859, 23848, 35739,
     ]]
   });
+
+  t.push({
+    label: 'custom n=64,k=3',
+    n: 64,
+    k: 3,
+    seed: Buffer.from('nVaX3bLwLzVDbNxaJ9/ILLDei1W2TZ/b8MCEnQEK6E0=', 'base64'),
+    nonce: 1,
+    inputs: [
+      [ 341, 10838, 44873, 129717, 24932, 42303, 100937, 107040 ]
+    ]
+  });
 }
 
 customTests();

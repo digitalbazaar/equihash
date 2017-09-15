@@ -115,6 +115,22 @@ suite
       });
     }
   })
+  .add({
+    name: 'solve n=64,k=3',
+    defer: true,
+    setup: () => {
+      seed = _seed();
+    },
+    fn: deferred => {
+      const options = {
+        n: 64,
+        k: 3
+      };
+      equihash.solve(seed, options, (err, proof) => {
+        deferred.resolve();
+      });
+    }
+  })
   /*
   .add({
     name: 'solve n=128,k=7',
