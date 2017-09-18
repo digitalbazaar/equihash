@@ -220,8 +220,9 @@ Proof Equihash::FindProof() {
             return Proof(proof.n, proof.k, proof.personal, proof.seed, proof.nonce, solution);
         }
         // increment nonce
-        // FIXME: this just finds 32 bit nonces
-        (*((uint32_t *)nonce.data()))++;
+        // FIXME: this just finds 32 bit nonces, handle arbitrary size
+        *((uint32_t *)nonce.data()) =
+            htole32(le32toh(*((uint32_t *)nonce.data())) + 1);
     }
     return Proof(n, k, personal, seed, nonce, Solution());
 }
