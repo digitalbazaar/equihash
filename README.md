@@ -17,47 +17,97 @@ npm install equihash
 
 ## The Equihash API
 
-`solve(seed, options, callback(err, proof))`
+### Solve
 
-Solve for a single solution.
+```javascript
+solve(seed, options, callback(err, proof))
+```
 
-`seed`: buffer of bytes to use as a seed
+Solve for a single solution for a given seed.
 
-`options` (common):
-- `n`: equihash `n` parameter
-- `k`: equihash `k` parameter
+`seed`: `Buffer` of bytes to use as a seed
+
+`options`:
+- `n`: Equihash `n` parameter
+- `k`: Equihash `k` parameter
 - `nonceLength`: number of bytes of nonce data to find (optional)
-
-`options` (engine specific):
-- `personal`: buffer of "personal" bytes used in some blake2 initializations
-  (optional)
-- `nonce`: initial value of nonce (engine dependent type) (optional)
+- `nonce`: initial value of nonce (optional)
 - `maxNonces`: max number of nonces to check (optional)
+- `algorithm`: `String` id of Equihash algorithm to use (optional)
+- `algorithmParamters`: `Object` with algorithm specific parameters (optional)
+
+`err`:
+- `Error` if one occurred, else null.
 
 `proof`:
-- `n`: equihash `n` parameter
-- `k`: equihash `k` parameter
-- `personal`: buffer of bytes used for "personal" bytes (engine dependent, optional)
-- `nonce`: buffer of nonce bytes
-- `solution`: array of unsigned integers
+- `n`: Equihash `n` parameter
+- `k`: Equihash `k` parameter
+- `nonce`: `Buffer` of nonce bytes
+- `solution`: `Array` of unsigned integers
+- `algorithm`: `String` id of the specific Equihash algorithm
+- `algorithmParamters`: `Object` with algorithm specific parameters (optional)
 
-`verify(seed, proof, options, callback(err, verified))`
+### Verify
+
+```javascript
+verify(seed, proof, callback(err, verified))
+```
 
 Verify a proof for a given seed.
 
+`seed`: `Buffer` of bytes to use as a seed
+
 `proof`: same as output from `solve()`
 
-`options` (engine specific):
-- `personal`: buffer of "personal" bytes used in some blake2 initializations
-  (optional)
-- `nonceLength`: number of bytes of nonce data if passing a number (4, optional)
+`err`:
+- `Error` if one occurred, else null. Note some incorrect inputs produce an
+  error while others may only return a false verified value.
 
-`equihash.PERSONALBYTES`
+`verified`:
+- true if proof is verified, else false.
 
-If supported for the current engine, get the the number of supported
-PERSONALBYTES for the blake2 implementations.  Often 16.
+### Engine
+
+```javascript
+engine(name)
+```
+
+Return an engine with a specific name. Required to access special engine APIs.
+
+`name`: `String` id of engine to retrieve
+
+## Engines
+
+Multiple Equihash may be available. The primary `equihash` API can be used with
+the above basic options. The engine that is used will be returned in the
+`algorithm` field. Engines may have special APIs and/or support special
+`algorithmParamters` in addition to the primary API.
+
+### khovratovich
+
+An engine based on the original `khovratovich` reference code.
+
+- `algorithm` id: `khovratovich`
+- Uses a modified implementation of the reference `khovratovich` code
+- Handles seed value of any length
+- `solve()` can start at any nonce of at least 4 bytes
+- `solve()` currently only mutates the first 4 bytes of the nonce
+- `verify()` can verify a nonce of any length
+- Uses BLAKE2b hashing.
+- Solution values hashed as 32 bit little-endian unsigned integers
+- Has certain `n` and `k` limitations
+- Note: Not strictly compatible with zcash implementation due to implementation
+  issues.
+
+API additions:
+- `BLAKE2B_PERSONALIZATION_BYTES`: The number of supported BLAKE2b
+  personalization bytes (16).
+
+`algorithmParamters`:
+- `personalization`: `Buffer` of BLAKE2b "personalization" bytes (optional)
 
 ## Usage Example
+
 ```javascript
 const equihash = require('equihash');
 
@@ -65,8 +115,7 @@ const equihash = require('equihash');
 const seed = crypto.createHash('sha256').update('test1234', 'utf8').digest();
 const options = {
   n: 90,
-  k: 5,
-  nonceLength: 4
+  k: 5
 }
 
 equihash.solve(seed, options, (err, proof) => {
@@ -86,9 +135,9 @@ equihash.solve(seed, options, (err, proof) => {
 });
 ```
 
-Use a specific Equihash engine:
+Use a named Equihash engine:
 ```javascript
-const equihash = require('equihash').engine('...');
+const equihash = require('equihash').engine('khovratovich');
 // ...
 ```
 
@@ -100,17 +149,31 @@ equihash.engine.default = '...';
 // ...
 ```
 
-## Engines
+Use specific options:
+```javascript
+const equihash = require('equihash').engine('khovratovich');
 
-`khovratovich`:
-- Uses a modified reference equihash implementation.
-- Handles seed value of any length.
-- Allows specifying the blake2b personal data.
-- Verifies nonces of any length.
-- Solver can generate nonce of any length but will only mutate first few bytes.
-- Solution of unsigned 32 bit values are processed as little endian values.
-- Note: Not strictly compatible with zcash implementation due to internal buffer
-  issues.
+// seed for equihash
+const seed = crypto.createHash('sha256').update('test1234', 'utf8').digest();
+
+// Create zero filled buffer and add our shorter string
+const personalization = Buffer.alloc(equihash.BLAKE2B_PERSONALIZATION_BYTES, 0);
+Buffer.from('MyProject').copy(personalization);
+
+const options = {
+  n: 90,
+  k: 5,
+  nonceLength: 32,
+  algorithm: 'khovratovich',
+  algorithmParamters: {
+    personalization
+  }
+}
+
+equihash.solve(seed, options, (err, proof) => {
+  ...
+});
+```
 
 ## Test Suite
 
@@ -124,3 +187,16 @@ npm test
 ```
 npm run benchmark
 ```
+
+## References
+
+### Papers
+
+- https://www.internetsociety.org/sites/default/files/blogs-media/equihash-asymmetric-proof-of-work-based-generalized-birthday-problem.pdf
+
+### Implementations
+
+- https://github.com/khovratovich/equihash
+- https://github.com/xenoncat/equihash-xenon
+- https://github.com/tromp/equihash
+- https://github.com/nicehash/nheqminer

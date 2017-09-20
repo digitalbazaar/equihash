@@ -19,6 +19,19 @@ function _seed(s='') {
 };
 
 describe('Equihash', function() {
+  it('should fail solve with bad algorithm', function(done) {
+    const options = {
+      n: 90,
+      k: 0,
+      algorithm: 'BOGUS'
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
   it('should fail solve with k<1', function(done) {
     const options = {
       n: 90,
@@ -119,6 +132,8 @@ describe('Equihash', function() {
     });
   });
   it('should check proof', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
     // raw output from khovratovich cli tool
     const sol = '20e9  1396c  719e  175d9  326b  16c4a  62f7  7bc9  2760  cd1e  129fc  15899  f7c3  17082  17add  1efa4  6993  18388  17964  1c6e3  e156  152b4  10bae  11973  7a51  aba9  91bd  dde1  c85f  1dfff  10094  1bed3';
     const solution = sol.split('  ').map(v => parseInt(v, 16));
@@ -133,7 +148,7 @@ describe('Equihash', function() {
     seed32.fill(1);
     const seed = new Uint8Array(seedab);
 
-    equihash.verify(seed, proof, (err, verified) => {
+    eh.verify(seed, proof, (err, verified) => {
       assert.ifError(err);
       assert(verified);
       done();
@@ -146,6 +161,8 @@ describe('Equihash', function() {
   const testVectorsMsg =
     `should check ${totalVectors} vectors with ${totalInputs} inputs`;
   it(testVectorsMsg, function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
     let i = 0;
     async.eachSeries(vectors.tests, (test, callback) => {
       i++;
@@ -156,7 +173,7 @@ describe('Equihash', function() {
           nonce: test.nonce,
           solution: inputs
         };
-        equihash.verify(new Uint8Array(test.seed), proof, (err, verified) => {
+        eh.verify(new Uint8Array(test.seed), proof, (err, verified) => {
           assert.ifError(err);
           const expect = 'expect' in test ? test.expect : true;
           assert.equal(verified, expect, test.label || `#${i}`);
@@ -166,6 +183,8 @@ describe('Equihash', function() {
     }, err => done(err));
   });
   it('should generate a n=90,k=5 proof', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
     const options = {
       n: 90,
       k: 5
@@ -175,8 +194,9 @@ describe('Equihash', function() {
       crypto.createHash('sha256').update('hello world', 'utf8').digest();
     input.copy(seed);
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert.ifError(err);
+      assert.equal(proof.algorithm, 'khovratovich');
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
       assert(proof.nonce);
@@ -193,6 +213,8 @@ describe('Equihash', function() {
   });
   /* too slow
   it('should generate a n=128,k=7 proof', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
     const options = {
       n: 128,
       k: 7
@@ -200,7 +222,7 @@ describe('Equihash', function() {
     const seed =
       crypto.createHash('sha256').update('hello world', 'utf8').digest();
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
@@ -408,12 +430,17 @@ describe('Equihash', function() {
       });
     });
   });
-  it('should get PERSONALBYTES', function(done) {
-    assert('PERSONALBYTES' in equihash);
+  it('should get BLAKE2B_PERSONAL_BYTES', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    assert('BLAKE2B_PERSONAL_BYTES' in eh);
+    assert(Number.isInteger(eh.BLAKE2B_PERSONAL_BYTES));
     done();
   });
   it('should verify a valid proof with personal bytes', function(done) {
-    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
@@ -421,14 +448,14 @@ describe('Equihash', function() {
     };
     const seed = _seed();
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
       assert(proof.personal.equals(options.personal));
       assert(proof.nonce);
       assert(proof.solution);
-      equihash.verify(seed, proof, (err, verified) => {
+      eh.verify(seed, proof, (err, verified) => {
         assert.ifError(err);
         assert(verified);
         done();
@@ -436,7 +463,9 @@ describe('Equihash', function() {
     });
   });
   it('should fail to verify with bad personal bytes', function(done) {
-    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
@@ -444,15 +473,15 @@ describe('Equihash', function() {
     };
     const seed = _seed();
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
       assert(proof.personal.equals(options.personal));
       assert(proof.nonce);
       assert(proof.solution);
-      proof.personal = Buffer.alloc(equihash.PERSONALBYTES, 2);
-      equihash.verify(seed, proof, (err, verified) => {
+      proof.personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 2);
+      eh.verify(seed, proof, (err, verified) => {
         assert.ifError(err);
         assert(!verified);
         done();
@@ -460,7 +489,9 @@ describe('Equihash', function() {
     });
   });
   it('should fail to solve with too many personal bytes', function(done) {
-    const personal = Buffer.alloc(equihash.PERSONALBYTES + 1, 0);
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 0);
     const options = {
       n: 90,
       k: 5,
@@ -468,13 +499,15 @@ describe('Equihash', function() {
     };
     const seed = _seed();
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert(err);
       done();
     });
   });
   it('should fail to verify with too many personal bytes', function(done) {
-    const personal = Buffer.alloc(equihash.PERSONALBYTES, 1);
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
@@ -482,15 +515,15 @@ describe('Equihash', function() {
     };
     const seed = _seed();
 
-    equihash.solve(seed, options, (err, proof) => {
+    eh.solve(seed, options, (err, proof) => {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
       assert(proof.personal.equals(options.personal));
       assert(proof.nonce);
       assert(proof.solution);
-      proof.personal = Buffer.alloc(equihash.PERSONALBYTES + 1, 1);
-      equihash.verify(seed, proof, (err, verified) => {
+      proof.personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 1);
+      eh.verify(seed, proof, (err, verified) => {
         assert(err);
         done();
       });
