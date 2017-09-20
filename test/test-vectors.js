@@ -1,6 +1,8 @@
 // Equihash test vectors
 
 const crypto = require('crypto');
+const equihash = require('..');
+const zcashVectors = require('./zcash-vectors');
 
 const api = {
   // vectors to test
@@ -62,7 +64,7 @@ api.bufferFromArray = function(data) {
 //   expect: true/false (optional)
 //   label: string (optional)
 
-function customTests() {
+function customTests(t) {
   // tests from khovratovich cli tool
   t.push({
     label: 'custom n=96,k=5',
@@ -210,4 +212,5 @@ function customTests() {
   });
 }
 
-customTests();
+customTests(t);
+//zcashVectors.zcashTests(t);
