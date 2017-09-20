@@ -8,6 +8,7 @@
  * <https://github.com/digitalbazaar/equihash/blob/master/LICENSE>
  */
 const Benchmark = require('benchmark');
+const assert = require('assert');
 const equihash = require('..');
 const crypto = require('crypto');
 // tests and helpers
@@ -50,9 +51,11 @@ vectors.benchmarks.forEach(test => {
           n: test.n,
           k: test.k,
           nonce: test.nonce,
-          solution: vectors.bufferFromArray(inputs)
+          solution: inputs
         };
         equihash.verify(new Uint8Array(test.seed), proof, (err, verified) => {
+          assert.ifError(err);
+          assert(verified);
           deferred.resolve();
         });
       }
