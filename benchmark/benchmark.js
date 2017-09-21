@@ -44,7 +44,7 @@ suite
 vectors.benchmarks.forEach(test => {
   test.inputs.forEach(inputs => {
     suite.add({
-      name: 'verify ' + test.label,
+      name: 'verify ' + test.label + ' (async)',
       defer: true,
       fn: deferred => {
         const proof = {
@@ -58,6 +58,21 @@ vectors.benchmarks.forEach(test => {
           assert(verified);
           deferred.resolve();
         });
+      }
+    });
+    suite.add({
+      name: 'verify ' + test.label + ' (sync)',
+      defer: true,
+      fn: deferred => {
+        const proof = {
+          n: test.n,
+          k: test.k,
+          nonce: test.nonce,
+          solution: inputs
+        };
+        const verified = equihash.verifySync(new Uint8Array(test.seed), proof);
+        assert(verified);
+        deferred.resolve();
       }
     });
   });

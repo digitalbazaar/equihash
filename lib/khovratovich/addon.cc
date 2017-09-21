@@ -211,11 +211,52 @@ NAN_METHOD(Verify) {
     AsyncQueueWorker(new EquihashVerifyWorker(proof, callback));
 }
 
+NAN_METHOD(VerifySync) {
+    // ensure first argument is an object
+    if(!info[0]->IsObject()) {
+        Nan::ThrowTypeError("'options' must be an object");
+        return;
+    }
+
+    // unbundle all data needed to check the proof
+    Handle<Object> object = Handle<Object>::Cast(info[0]);
+    Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
+    Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
+    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
+    Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
+    Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
+    Handle<Array> solutionArray = Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
+
+    const unsigned n = To<uint32_t>(nValue).FromJust();
+    const unsigned k = To<uint32_t>(kValue).FromJust();
+    uint8_t* personalBuffer = (uint8_t*)node::Buffer::Data(personalValue);
+    size_t personalBufferLength = node::Buffer::Length(personalValue);
+    uint8_t* nonceBuffer = (uint8_t*)node::Buffer::Data(nonceValue);
+    size_t nonceBufferLength = node::Buffer::Length(nonceValue);
+    uint8_t* seedBuffer = (uint8_t*)node::Buffer::Data(seedValue);
+    size_t seedBufferLength = node::Buffer::Length(seedValue);
+
+    // initialize the proof object
+    Personal personal(personalBuffer, personalBuffer + personalBufferLength);
+    Seed seed(seedBuffer, seedBuffer + seedBufferLength);
+    Nonce nonce(nonceBuffer, nonceBuffer + nonceBufferLength);
+    Solution solution(solutionArray->Length());
+    for(size_t i = 0; i < solution.size(); ++i) {
+        solution[i] = solutionArray->Get(i)->NumberValue();
+    }
+    Proof proof(n, k, personal, seed, nonce, solution);
+
+    // check proof and and return result
+    info.GetReturnValue().Set(proof.Test());
+}
+
 NAN_MODULE_INIT(InitAll) {
     Set(target, New<String>("solve").ToLocalChecked(),
             GetFunction(New<FunctionTemplate>(Solve)).ToLocalChecked());
     Set(target, New<String>("verify").ToLocalChecked(),
             GetFunction(New<FunctionTemplate>(Verify)).ToLocalChecked());
+    Set(target, New<String>("verifySync").ToLocalChecked(),
+            GetFunction(New<FunctionTemplate>(VerifySync)).ToLocalChecked());
 }
 
 NODE_MODULE(addon, InitAll)
