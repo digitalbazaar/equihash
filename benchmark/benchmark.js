@@ -92,6 +92,7 @@ suite
         k: 5
       };
       equihash.solve(seed, options, (err, proof) => {
+        assert.ifError(err);
         deferred.resolve();
       });
     }
@@ -113,6 +114,7 @@ suite
       };
       equihash.solve(seeds[i], options, (err, proof) => {
         i = (i + 1) % 100;
+        assert.ifError(err);
         deferred.resolve();
       });
     }
@@ -129,6 +131,7 @@ suite
         k: 5
       };
       equihash.solve(seed, options, (err, proof) => {
+        assert.ifError(err);
         deferred.resolve();
       });
     }
@@ -145,6 +148,7 @@ suite
         k: 3
       };
       equihash.solve(seed, options, (err, proof) => {
+        assert.ifError(err);
         deferred.resolve();
       });
     }
@@ -162,6 +166,7 @@ suite
         k: 7
       };
       equihash.solve(seed, options, (err, proof) => {
+        assert.ifError(err);
         deferred.resolve();
       });
     }
