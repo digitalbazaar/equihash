@@ -154,14 +154,14 @@ suite
     name: 'solve n=128,k=7',
     defer: true,
     setup: () => {
-      input = _input();
+      seed = _seed();
     },
     fn: deferred => {
       const options = {
         n: 128,
         k: 7
       };
-      equihash.solve(input, options, (err, proof) => {
+      equihash.solve(seed, options, (err, proof) => {
         deferred.resolve();
       });
     }
