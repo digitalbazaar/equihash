@@ -9,6 +9,7 @@
  */
 const Benchmark = require('benchmark');
 const assert = require('assert');
+const async = require('async');
 const equihash = require('..');
 const crypto = require('crypto');
 // tests and helpers
@@ -17,11 +18,66 @@ const vectors = require('../test/test-vectors');
 const suite = new Benchmark.Suite;
 
 function _seed(s='') {
-  return crypto.createHash('sha256').update('hello world' + s, 'utf8').digest();
+  return crypto.createHash('sha256').update('test:' + s, 'utf8').digest();
 }
 
 let seed;
 let i;
+
+function _solveRandomInc({n, k, i=0, seedSize=32, minSamples}) {
+  let options = {
+    name: `solve n=${n},k=${k},seeds=rand-inc`,
+    defer: true,
+    onStart: function() {
+      seed = _seed(i);
+    },
+    fn: function(deferred) {
+      const options = {
+        n: n,
+        k: k
+      };
+      equihash.solve(seed, options, function(err, proof) {
+        assert.ifError(err);
+        deferred.resolve();
+      });
+    },
+    onCycle: () => {
+      i++;
+      seed = _seed(i);
+    }
+  };
+  if(minSamples) {
+    options.minSamples = minSamples;
+  }
+  return options;
+}
+
+function _solveRandom({n, k, seedSize=32, minSamples}) {
+  let options = {
+    name: `solve n=${n},k=${k},seeds=rand`,
+    defer: true,
+    onStart: function() {
+      seed = crypto.randomBytes(seedSize);
+    },
+    fn: function(deferred) {
+      const options = {
+        n: n,
+        k: k
+      };
+      equihash.solve(seed, options, function(err, proof) {
+        assert.ifError(err);
+        deferred.resolve();
+      });
+    },
+    onCycle: () => {
+      seed = crypto.randomBytes(seedSize);
+    }
+  };
+  if(minSamples) {
+    options.minSamples = minSamples;
+  }
+  return options;
+}
 
 // test deferred test overhead
 /*
@@ -80,105 +136,25 @@ vectors.benchmarks.forEach(test => {
 
 // test solve
 suite
-  .add({
-    name: 'solve n=90,k=5,seeds=1',
-    defer: true,
-    setup: () => {
-      seed = _seed();
-    },
-    fn: deferred => {
-      const options = {
-        n: 90,
-        k: 5
-      };
-      equihash.solve(seed, options, (err, proof) => {
-        assert.ifError(err);
-        deferred.resolve();
-      });
-    }
-  })
-  .add({
-    name: 'solve n=90,k=5,seeds=100',
-    defer: true,
-    setup: () => {
-      seeds = [];
-      for(i = 0; i < 100; ++i) {
-        seeds.push(_seed(i.toString()));
-      }
-      i = 0;
-    },
-    fn: deferred => {
-      const options = {
-        n: 90,
-        k: 5
-      };
-      equihash.solve(seeds[i], options, (err, proof) => {
-        i = (i + 1) % 100;
-        assert.ifError(err);
-        deferred.resolve();
-      });
-    }
-  })
-  .add({
-    name: 'solve n=96,k=5',
-    defer: true,
-    setup: () => {
-      seed = _seed();
-    },
-    fn: deferred => {
-      const options = {
-        n: 96,
-        k: 5
-      };
-      equihash.solve(seed, options, (err, proof) => {
-        assert.ifError(err);
-        deferred.resolve();
-      });
-    }
-  })
-  .add({
-    name: 'solve n=64,k=3',
-    defer: true,
-    setup: () => {
-      seed = _seed();
-    },
-    fn: deferred => {
-      const options = {
-        n: 64,
-        k: 3
-      };
-      equihash.solve(seed, options, (err, proof) => {
-        assert.ifError(err);
-        deferred.resolve();
-      });
-    }
-  })
-  /*
-  .add({
-    name: 'solve n=128,k=7',
-    defer: true,
-    setup: () => {
-      seed = _seed();
-    },
-    fn: deferred => {
-      const options = {
-        n: 128,
-        k: 7
-      };
-      equihash.solve(seed, options, (err, proof) => {
-        assert.ifError(err);
-        deferred.resolve();
-      });
-    }
-  })
-  */
+  .add(_solveRandomInc({n: 90, k: 5, minSamples: 10}))
+  .add(_solveRandom({n: 90, k: 5, minSamples: 10}))
+  .add(_solveRandomInc({n: 96, k: 5, minSamples: 10}))
+  .add(_solveRandom({n: 96, k: 5, minSamples: 10}))
+  .add(_solveRandom({n: 64, k: 3, minSamples: 10}))
+  .add(_solveRandom({n: 128, k: 7, minSamples: 10}))
   ;
 
 suite
   .on('start', () => {
     console.log('Benchmarking...');
   })
-  .on('cycle', event => console.log(String(event.target)))
+  .on('cycle', event => {
+    console.log(String(event.target));
+    const s = event.target.stats;
+    console.log(`  min:${Math.min(...s.sample)} max:${Math.max(...s.sample)}`);
+    console.log(`  deviation:${s.deviation} mean:${s.mean}`);
+    console.log(`  moe:${s.moe} rme:${s.rme}% sem:${s.sem} var:${s.variance}`);
+  })
   .on('complete', () => {
     console.log('Done.');
   })
