@@ -99,6 +99,15 @@ class Equihash {
     Seed seed;
     Nonce nonce;
     uint32_t maxNonces;
+
+    void FillMemory(uint32_t length);      //fill with hash
+    void InitializeMemory(); //allocate memory
+    void ResolveCollisions(bool store);
+    bool HasDistinctIndicies(Solution &solution);
+    void OrderSolution(Solution &solution);
+    void IncrementNonce();
+    std::vector<Input> ResolveTree(Fork fork);
+    std::vector<Input> ResolveTreeByLevel(Fork fork, unsigned level);
 public:
     /*
        Initializes memory.
@@ -109,11 +118,6 @@ public:
         n(eh.n), k(eh.k), personal(eh.personal), seed(eh.seed), nonce(eh.nonce), maxNonces(eh.maxNonces) {};
     ~Equihash() {};
     Proof FindProof();
-    void FillMemory(uint32_t length);      //fill with hash
-    void InitializeMemory(); //allocate memory
-    void ResolveCollisions(bool store);
-    std::vector<Input> ResolveTree(Fork fork);
-    std::vector<Input> ResolveTreeByLevel(Fork fork, unsigned level);
     void PrintTuples(FILE* fp);
 };
 

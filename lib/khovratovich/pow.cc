@@ -28,6 +28,7 @@ static uint64_t rdtsc(void) {
 #endif
 }
 */
+
 using namespace std;
 
 void Equihash::InitializeMemory()
@@ -138,7 +139,16 @@ void Equihash::ResolveCollisions(bool store) {
                 if (store) {  //last step
                     if (newIndex == 0) {//Solution
                         std::vector<Input> solution_inputs = ResolveTree(newFork);
-                        solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
+                        // distinct indices check
+                        if (HasDistinctIndicies(solution_inputs)) {
+                            // order tree and save
+                            OrderSolution(solution_inputs);
+                            solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
+                            // TODO: support returning more solutions?
+                            // TODO: support difficulty check
+                            // only need one solution, return
+                            return;
+                        }
                     }
                 }
                 else {         //Resolve
@@ -159,6 +169,41 @@ void Equihash::ResolveCollisions(bool store) {
     forks.push_back(newForks);
     std::swap(tupleList, collisionList);
     std::swap(filledList, newFilledList);
+}
+
+bool Equihash::HasDistinctIndicies(Solution &solution) {
+    // sort and check for duplicate values
+    auto vec = solution;
+    std::sort(vec.begin(), vec.end());
+    for (size_t k = 0; k < vec.size() - 1; ++k) {
+        if (vec[k] == vec[k + 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Equihash::OrderSolution(Solution &solution) {
+    // order tree
+    for (size_t level = 0; level < k; ++level) {
+        size_t stride = 1 << level;
+        for (size_t j = 0; j < solution.size(); j += (2 * stride)) {
+            if (solution[j] >= solution[j + stride]) {
+                // swap branches
+                std::swap_ranges(
+                        solution.begin() + j,
+                        solution.begin() + j + stride,
+                        solution.begin() + j + stride);
+            }
+        }
+    }
+}
+
+void Equihash::IncrementNonce() {
+    // increment nonce
+    // FIXME: this only finds 32 bit nonces, handle arbitrary byte size
+    *((uint32_t *)nonce.data()) =
+        htole32(le32toh(*((uint32_t *)nonce.data())) + 1);
 }
 
 Proof Equihash::FindProof() {
@@ -187,42 +232,10 @@ Proof Equihash::FindProof() {
         //    mcycles_d);
 
         // check for a valid solution
-        for (size_t i = 0; i < solutions.size(); ++i) {
-            Proof &proof = solutions[i];
-
-            // distinct indices check
-            auto vec = proof.solution;
-            std::sort(vec.begin(), vec.end());
-            bool dup = false;
-            for (size_t k = 0; !dup && k < vec.size() - 1; ++k) {
-                if (vec[k] == vec[k + 1]) {
-                    dup = true;
-                }
-            }
-
-            if (dup)
-                continue;
-
-            // order tree
-            auto solution = proof.solution;
-            for (size_t level = 0; level < proof.k; ++level) {
-                size_t stride = 1 << level;
-                for (size_t j = 0; j < solution.size(); j += (2 * stride)) {
-                    if (solution[j] >= solution[j + stride]) {
-                        // swap branches
-                        std::swap_ranges(
-                                solution.begin() + j,
-                                solution.begin() + j + stride,
-                                solution.begin() + j + stride);
-                    }
-                }
-            }
-            return Proof(proof.n, proof.k, proof.personal, proof.seed, proof.nonce, solution);
+        if(solutions.size() > 0) {
+            return solutions[0];
         }
-        // increment nonce
-        // FIXME: this just finds 32 bit nonces, handle arbitrary size
-        *((uint32_t *)nonce.data()) =
-            htole32(le32toh(*((uint32_t *)nonce.data())) + 1);
+        IncrementNonce();
     }
     return Proof(n, k, personal, seed, nonce, Solution());
 }
