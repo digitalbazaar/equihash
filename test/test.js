@@ -117,7 +117,7 @@ describe('Equihash', function() {
       });
     });
   });
-  it('should fail verify with bad max nonces', function(done) {
+  it('should fail solve with bad max nonces', function(done) {
     const options = {
       n: 90,
       k: 5,
