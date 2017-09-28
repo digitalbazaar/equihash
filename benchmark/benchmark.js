@@ -10,8 +10,10 @@
 const Benchmark = require('benchmark');
 const assert = require('assert');
 const async = require('async');
-const equihash = require('..');
 const crypto = require('crypto');
+const equihash = require('..');
+const fs = require('fs');
+const path = require('path');
 // tests and helpers
 const vectors = require('../test/test-vectors');
 
@@ -26,6 +28,7 @@ let i;
 
 function _solveRandomInc({n, k, i=0, seedSize=32, minSamples}) {
   let options = {
+    _data: {n, k, tag: `inc-${i}`},
     name: `solve n=${n},k=${k},seeds=rand-inc`,
     defer: true,
     onStart: function() {
@@ -41,7 +44,9 @@ function _solveRandomInc({n, k, i=0, seedSize=32, minSamples}) {
         deferred.resolve();
       });
     },
-    onCycle: () => {
+    onCycle: event => {
+      const samples = event.target.stats.sample;
+      progress({samples, info: event.target._data});
       i++;
       seed = _seed(i);
     }
@@ -54,6 +59,7 @@ function _solveRandomInc({n, k, i=0, seedSize=32, minSamples}) {
 
 function _solveRandom({n, k, seedSize=32, minSamples}) {
   let options = {
+    _data: {n, k, tag: `rand`},
     name: `solve n=${n},k=${k},seeds=rand`,
     defer: true,
     onStart: function() {
@@ -69,7 +75,9 @@ function _solveRandom({n, k, seedSize=32, minSamples}) {
         deferred.resolve();
       });
     },
-    onCycle: () => {
+    onCycle: event => {
+      const samples = event.target.stats.sample;
+      progress({samples, info: event.target._data});
       seed = crypto.randomBytes(seedSize);
     }
   };
@@ -135,13 +143,16 @@ vectors.benchmarks.forEach(test => {
 });
 
 // test solve
+const minSamples = 10;
 suite
-  .add(_solveRandomInc({n: 90, k: 5, minSamples: 10}))
-  .add(_solveRandom({n: 90, k: 5, minSamples: 10}))
-  .add(_solveRandomInc({n: 96, k: 5, minSamples: 10}))
-  .add(_solveRandom({n: 96, k: 5, minSamples: 10}))
-  .add(_solveRandom({n: 64, k: 3, minSamples: 10}))
-  .add(_solveRandom({n: 128, k: 7, minSamples: 10}))
+  .add(_solveRandomInc({n: 90, k: 5, minSamples}))
+  .add(_solveRandom({n: 90, k: 5, minSamples}))
+  .add(_solveRandomInc({n: 96, k: 5, minSamples}))
+  .add(_solveRandom({n: 96, k: 5, minSamples}))
+  .add(_solveRandom({n: 64, k: 3, minSamples}))
+  .add(_solveRandom({n: 128, k: 7, minSamples}))
+  //.add(_solveRandom({n: 144, k: 5}))
+  //.add(_solveRandom({n: 200, k: 9}))
   ;
 
 suite
@@ -151,11 +162,38 @@ suite
   .on('cycle', event => {
     console.log(String(event.target));
     const s = event.target.stats;
+    const d = event.target._data;
     console.log(`  min:${Math.min(...s.sample)} max:${Math.max(...s.sample)}`);
     console.log(`  deviation:${s.deviation} mean:${s.mean}`);
     console.log(`  moe:${s.moe} rme:${s.rme}% sem:${s.sem} var:${s.variance}`);
+    progress({samples: s.sample, info: d, last: true});
   })
   .on('complete', () => {
     console.log('Done.');
   })
   .run({async: true});
+
+function progress({samples, info, last=false}) {
+  if(process.env.DATADIR) {
+    if(last || (samples.length % 20 === 0)) {
+      savedata(...arguments);
+    }
+  }
+}
+const filePrefix = (new Date).toISOString().replace(/[^0-9]/g,'');
+const uniqf = new Map();
+function savedata({samples, info, last=false}) {
+  const idxname =
+    `${filePrefix}-${info.n}-${info.k}-${info.tag}-${samples.length}`;
+  const cur = uniqf.get(idxname) || 0;
+  const next = cur + 1;
+  uniqf.set(idxname, next);
+  const lasttag = last ? '-last' : '';
+  const filename =
+    path.join(process.env.DATADIR, `${idxname}-${next}${lasttag}.csv`);
+  if(fs.existsSync(filename)) {
+    throw new Error('Conflicting data filename: ' + filename);
+  }
+  fs.writeFileSync(filename, samples.join('\n') + '\n');
+  console.log('Wrote samples:', filename);
+}
