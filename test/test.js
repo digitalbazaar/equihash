@@ -131,6 +131,21 @@ describe('Equihash', function() {
       done();
     });
   });
+  it('should get error if no solutions found', function(done) {
+    // pick known params that have no solution
+    const options = {
+      n: 90,
+      k: 5,
+      nonce: 3,
+      maxNonces: 1
+    };
+    const seed = Buffer.from('');
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
   it('should check proof', function(done) {
     const eh = equihash.engine('khovratovich');
     assert(eh);
