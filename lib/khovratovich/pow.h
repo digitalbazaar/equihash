@@ -6,7 +6,7 @@
 #ifndef __POW
 #define __POW
 
-#include <cstdint>
+#include <stdint.h>
 
 #include <vector>
 #include <cstdio>

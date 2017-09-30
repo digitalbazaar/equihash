@@ -7,7 +7,15 @@
 #include "blake/blake2.h"
 #include <algorithm>
 #include <cstring>
-#include <endian.h>
+#if defined(__APPLE__)
+    // TODO: only use this if endian.h does not exist
+    // mac os x support
+    #include <libkern/OSByteOrder.h>
+    #define htole32(x) OSSwapHostToLittleInt32(x)
+    #define le32toh(x) OSSwapLittleToHostInt32(x)
+#else
+    #include <endian.h>
+#endif
 
 /*
 static uint64_t rdtsc(void) {
