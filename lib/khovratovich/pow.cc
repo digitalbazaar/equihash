@@ -115,8 +115,12 @@ void Equihash::FillMemory(uint32_t length) //works for k<=7
 }
 
 std::vector<Input> Equihash::ResolveTreeByLevel(Fork fork, unsigned level) {
-    if (level == 0)
-        return std::vector<Input>{fork.ref1, fork.ref2};
+    if (level == 0) {
+        std::vector<Input> v(2);
+        v[0] = fork.ref1;
+        v[1] = fork.ref2;
+        return v;
+    }
     auto v1 = ResolveTreeByLevel(forks[level - 1][fork.ref1], level - 1);
     auto v2 = ResolveTreeByLevel(forks[level - 1][fork.ref2], level - 1);
     v1.insert(v1.end(), v2.begin(), v2.end());
