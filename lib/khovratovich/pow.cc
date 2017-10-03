@@ -1,10 +1,21 @@
-/*Code by Dmitry Khovratovich, 2016
-CC0 license
-*/
+/**
+ * Code by Dmitry Khovratovich, 2016
+ * CC0 license
+ */
 
 #include "pow.h"
 #include "blake/blake2.h"
 #include <algorithm>
+#include <cstring>
+#if defined(__APPLE__)
+    // TODO: only use this if endian.h does not exist
+    // mac os x support
+    #include <libkern/OSByteOrder.h>
+    #define htole32(x) OSSwapHostToLittleInt32(x)
+    #define le32toh(x) OSSwapLittleToHostInt32(x)
+#else
+    #include <endian.h>
+#endif
 
 /*
 static uint64_t rdtsc(void) {
@@ -25,11 +36,12 @@ static uint64_t rdtsc(void) {
 #endif
 }
 */
+
 using namespace std;
 
 void Equihash::InitializeMemory()
 {
-    uint32_t  tuple_n = ((uint32_t)1) << (n / (k + 1));
+    uint32_t tuple_n = ((uint32_t)1) << (n / (k + 1));
     Tuple default_tuple(k); // k blocks to store (one left for index)
     std::vector<Tuple> def_tuples(LIST_LENGTH, default_tuple);
     tupleList = std::vector<std::vector<Tuple>>(tuple_n, def_tuples);
@@ -56,14 +68,39 @@ void Equihash::PrintTuples(FILE* fp) {
 
 void Equihash::FillMemory(uint32_t length) //works for k<=7
 {
-    uint32_t input[SEED_LENGTH + 2];
-    for (unsigned i = 0; i < SEED_LENGTH; ++i)
-        input[i] = seed[i];
-    input[SEED_LENGTH] = nonce;
-    input[SEED_LENGTH + 1] = 0;
+    blake2b_state state[1];
     uint32_t buf[MAX_N / 4];
-    for (unsigned i = 0; i < length; ++i, ++input[SEED_LENGTH + 1]) {
-        blake2b((uint8_t*)buf, &input, NULL, sizeof(buf), sizeof(input), 0);
+    blake2b_param P =
+    {
+        sizeof(buf),
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        {0},
+        {0},
+        {0}
+    };
+    std::memcpy(
+            P.personal, personal.data(),
+            std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
+    blake2b_init_param(state, &P);
+    blake2b_update(state, seed.data(), seed.size());
+    blake2b_update(state, nonce.data(), nonce.size());
+
+    for (uint32_t i = 0; i < length; ++i) {
+        // copy state
+        blake2b_state next_state = state[0];
+        // update with next input
+        uint32_t input = htole32(i);
+        //printf("INP %d\n", input);
+        blake2b_update(&next_state, (uint8_t*)&input, sizeof(uint32_t));
+        // finalize
+        blake2b_final(&next_state, (uint8_t*)buf, sizeof(buf));
+
         uint32_t index = buf[0] >> (32 - n / (k + 1));
         unsigned count = filledList[index];
         if (count < LIST_LENGTH) {
@@ -78,8 +115,12 @@ void Equihash::FillMemory(uint32_t length) //works for k<=7
 }
 
 std::vector<Input> Equihash::ResolveTreeByLevel(Fork fork, unsigned level) {
-    if (level == 0)
-        return std::vector<Input>{fork.ref1, fork.ref2};
+    if (level == 0) {
+        std::vector<Input> v(2);
+        v[0] = fork.ref1;
+        v[1] = fork.ref2;
+        return v;
+    }
     auto v1 = ResolveTreeByLevel(forks[level - 1][fork.ref1], level - 1);
     auto v2 = ResolveTreeByLevel(forks[level - 1][fork.ref2], level - 1);
     v1.insert(v1.end(), v2.begin(), v2.end());
@@ -110,7 +151,16 @@ void Equihash::ResolveCollisions(bool store) {
                 if (store) {  //last step
                     if (newIndex == 0) {//Solution
                         std::vector<Input> solution_inputs = ResolveTree(newFork);
-                        solutions.push_back(Proof(n, k, seed, nonce, solution_inputs));
+                        // distinct indices check
+                        if (HasDistinctIndicies(solution_inputs)) {
+                            // order tree and save
+                            OrderSolution(solution_inputs);
+                            solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
+                            // TODO: support returning more solutions?
+                            // TODO: support difficulty check
+                            // only need one solution, return
+                            return;
+                        }
                     }
                 }
                 else {         //Resolve
@@ -133,12 +183,45 @@ void Equihash::ResolveCollisions(bool store) {
     std::swap(filledList, newFilledList);
 }
 
-Proof Equihash::FindProof(){
+bool Equihash::HasDistinctIndicies(Solution &solution) {
+    // sort and check for duplicate values
+    auto vec = solution;
+    std::sort(vec.begin(), vec.end());
+    for (size_t k = 0; k < vec.size() - 1; ++k) {
+        if (vec[k] == vec[k + 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Equihash::OrderSolution(Solution &solution) {
+    // order tree
+    for (size_t level = 0; level < k; ++level) {
+        size_t stride = 1 << level;
+        for (size_t j = 0; j < solution.size(); j += (2 * stride)) {
+            if (solution[j] >= solution[j + stride]) {
+                // swap branches
+                std::swap_ranges(
+                        solution.begin() + j,
+                        solution.begin() + j + stride,
+                        solution.begin() + j + stride);
+            }
+        }
+    }
+}
+
+void Equihash::IncrementNonce() {
+    // increment nonce
+    // FIXME: this only finds 32 bit nonces, handle arbitrary byte size
+    *((uint32_t *)nonce.data()) =
+        htole32(le32toh(*((uint32_t *)nonce.data())) + 1);
+}
+
+Proof Equihash::FindProof() {
     //FILE* fp = fopen("proof.log", "w+");
     //fclose(fp);
-    this->nonce = 1;
-    while (nonce < MAX_NONCE) {
-        nonce++;
+    for(uint32_t count = 0; count < maxNonces; ++count) {
         //printf("Testing nonce %d\n", nonce);
         //uint64_t start_cycles = rdtsc();
         InitializeMemory(); //allocate
@@ -160,34 +243,50 @@ Proof Equihash::FindProof(){
         //    n, k, kbytes,
         //    mcycles_d);
 
-        //Duplicate check
-        for (unsigned i = 0; i < solutions.size(); ++i) {
-            auto vec = solutions[i].inputs;
-            std::sort(vec.begin(), vec.end());
-            bool dup = false;
-            for (unsigned k = 0; k < vec.size() - 1; ++k) {
-                if (vec[k] == vec[k + 1])
-                    dup = true;
-            }
-            if (!dup)
-                return solutions[i];
+        // check for a valid solution
+        if(solutions.size() > 0) {
+            return solutions[0];
         }
+        IncrementNonce();
     }
-    return Proof(n, k, seed, nonce, std::vector<uint32_t>());
+    return Proof(n, k, personal, seed, nonce, Solution());
 }
 
 bool Proof::Test()
 {
-    uint32_t input[SEED_LENGTH + 2];
-    for (unsigned i = 0; i < SEED_LENGTH; ++i)
-        input[i] = seed[i];
-    input[SEED_LENGTH] = nonce;
-    input[SEED_LENGTH + 1] = 0;
+    blake2b_state state[1];
     uint32_t buf[MAX_N / 4];
-    std::vector<uint32_t> blocks(k+1,0);
-    for (unsigned i = 0; i < inputs.size(); ++i) {
-        input[SEED_LENGTH + 1] = inputs[i];
-        blake2b((uint8_t*)buf, &input, NULL, sizeof(buf), sizeof(input), 0);
+    std::vector<uint32_t> blocks(k+1, 0);
+    blake2b_param P =
+    {
+        sizeof(buf),
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        {0},
+        {0},
+        {0}
+    };
+    std::memcpy(
+            P.personal, personal.data(),
+            std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
+    blake2b_init_param(state, &P);
+    blake2b_update(state, seed.data(), seed.size());
+    blake2b_update(state, nonce.data(), nonce.size());
+
+    for (size_t i = 0; i < solution.size(); ++i) {
+        // copy state
+        blake2b_state next_state = state[0];
+        // update with next input
+        uint32_t input = htole32(solution[i]);
+        blake2b_update(&next_state, (uint8_t*)&input, sizeof(uint32_t));
+        // finalize
+        blake2b_final(&next_state, (uint8_t*)buf, sizeof(buf));
+
         for (unsigned j = 0; j < (k + 1); ++j) {
             //select j-th block of n/(k+1) bits
             blocks[j] ^= buf[j] >> (32 - n / (k + 1));
@@ -205,5 +304,5 @@ bool Proof::Test()
         }
         printf("%i\n", b);
     }*/
-    return b;
+    return b && solution.size()!=0;
 }

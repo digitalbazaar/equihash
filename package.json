@@ -13,13 +13,19 @@
   "homepage": "https://github.com/digitalbazaar/equihash#readme",
   "gypfile": true,
   "scripts": {
+    "benchmark": "node benchmark/benchmark.js",
     "test": "mocha -t 30000"
+  },
+  "engines": {
+    "node": ">=6.0.0"
   },
   "dependencies": {
     "bindings": "^1.2.1",
     "nan": "^2.6.2"
   },
   "devDependencies": {
+    "async": "^2.5.0",
+    "benchmark": "^2.1.4",
     "mocha": "^3.4.2"
   }
 }
