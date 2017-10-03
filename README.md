@@ -34,7 +34,7 @@ Solve for a single solution for a given seed.
 - `nonce`: initial value of nonce (optional)
 - `maxNonces`: max number of nonces to check (optional)
 - `algorithm`: `String` id of Equihash algorithm to use (optional)
-- `algorithmParamters`: `Object` with algorithm specific parameters (optional)
+- `algorithmParameters`: `Object` with algorithm specific parameters (optional)
 
 `err`:
 - `Error` if one occurred, else null.
@@ -45,7 +45,7 @@ Solve for a single solution for a given seed.
 - `nonce`: `Buffer` of nonce bytes
 - `solution`: `Array` of unsigned integers
 - `algorithm`: `String` id of the specific Equihash algorithm
-- `algorithmParamters`: `Object` with algorithm specific parameters (optional)
+- `algorithmParameters`: `Object` with algorithm specific parameters (optional)
 
 ### Verify
 
@@ -81,7 +81,7 @@ Return an engine with a specific name. Required to access special engine APIs.
 Multiple Equihash may be available. The primary `equihash` API can be used with
 the above basic options. The engine that is used will be returned in the
 `algorithm` field. Engines may have special APIs and/or support special
-`algorithmParamters` in addition to the primary API.
+`algorithmParameters` in addition to the primary API.
 
 ### khovratovich
 
@@ -103,7 +103,7 @@ API additions:
 - `BLAKE2B_PERSONALIZATION_BYTES`: The number of supported BLAKE2b
   personalization bytes (16).
 
-`algorithmParamters`:
+`algorithmParameters`:
 - `personalization`: `Buffer` of BLAKE2b "personalization" bytes (optional)
 
 ## Usage Example
@@ -165,7 +165,7 @@ const options = {
   k: 5,
   nonceLength: 32,
   algorithm: 'khovratovich',
-  algorithmParamters: {
+  algorithmParameters: {
     personalization
   }
 }
