@@ -45,6 +45,10 @@ public:
     // should go on `this`.
     void Execute () {
         proof = equihash.FindProof();
+        nonceCount = equihash.nonceCount;
+        solutionCount = equihash.solutionCount;
+        distinctCount = equihash.distinctCount;
+        difficultCount = equihash.difficultCount;
         //printhex("solution", &solution[0], solution.size());
     }
 
@@ -64,11 +68,11 @@ public:
 
         obj->Set(New("n").ToLocalChecked(), New(proof.n));
         obj->Set(New("k").ToLocalChecked(), New(proof.k));
-        obj->Set(New("personal").ToLocalChecked(),
-            Nan::CopyBuffer(
-                (const char *)proof.personal.data(), proof.personal.size())
-                .ToLocalChecked());
-        // TODO: add option to include seed in proof
+        // TODO: add option to include input options in proof
+        //obj->Set(New("personalization").ToLocalChecked(),
+        //    Nan::CopyBuffer(
+        //        (const char *)proof.personal.data(), proof.personal.size())
+        //        .ToLocalChecked());
         //obj->Set(New("seed").ToLocalChecked(),
         //    Nan::CopyBuffer(
         //        (const char *)proof.seed.data(), proof.seed.size())
@@ -78,6 +82,11 @@ public:
                 (const char *)proof.nonce.data(), proof.nonce.size())
                 .ToLocalChecked());
         obj->Set(New("solution").ToLocalChecked(), solutionValue);
+
+        obj->Set(New("nonceCount").ToLocalChecked(), New(nonceCount));
+        obj->Set(New("solutionCount").ToLocalChecked(), New(solutionCount));
+        obj->Set(New("distinctCount").ToLocalChecked(), New(distinctCount));
+        obj->Set(New("difficultCount").ToLocalChecked(), New(difficultCount));
 
         Local<Value> argv[] = {
             Null(),
@@ -90,6 +99,10 @@ public:
 private:
     Equihash equihash;
     Proof proof;
+    unsigned nonceCount;
+    unsigned solutionCount;
+    unsigned distinctCount;
+    unsigned difficultCount;
 };
 
 class EquihashVerifyWorker : public AsyncWorker {
@@ -141,11 +154,14 @@ NAN_METHOD(Solve) {
     Handle<Object> object = Handle<Object>::Cast(info[0]);
     Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
     Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
-    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
+    Handle<Value> personalValue =
+        object->Get(New("personalization").ToLocalChecked());
     Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
     Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
     Handle<Value> maxNoncesValue =
         object->Get(New("maxNonces").ToLocalChecked());
+    Handle<Value> difficultyValue =
+        object->Get(New("difficulty").ToLocalChecked());
 
     const unsigned n = To<uint32_t>(nValue).FromJust();
     const unsigned k = To<uint32_t>(kValue).FromJust();
@@ -156,13 +172,15 @@ NAN_METHOD(Solve) {
     size_t nonceBufferLength = node::Buffer::Length(nonceValue);
     uint8_t* nonceBuffer = (uint8_t*)node::Buffer::Data(nonceValue);
     const uint32_t maxNonces = To<uint32_t>(maxNoncesValue).FromJust();
+    // value constrained to [0,MAX_SAFE_INTEGER]
+    const uint64_t difficulty = To<int64_t>(difficultyValue).FromJust();
 
     Equihash equihash(
             n, k,
             Personal(personalBuffer, personalBuffer + personalBufferLength),
             Seed(seedBuffer, seedBuffer + seedBufferLength),
             Nonce(nonceBuffer, nonceBuffer + nonceBufferLength),
-            maxNonces);
+            maxNonces, difficulty);
 
     //printhex("seed", seedBuffer, bufferLength);
 
@@ -175,16 +193,23 @@ NAN_METHOD(Verify) {
         Nan::ThrowTypeError("'options' must be an object");
         return;
     }
+    // ensure second argument is a callback
+    if(!info[1]->IsFunction()) {
+        Nan::ThrowTypeError("'callback' must be a function");
+        return;
+    }
 
     Callback *callback = new Callback(info[1].As<Function>());
     // unbundle all data needed to check the proof
     Handle<Object> object = Handle<Object>::Cast(info[0]);
     Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
     Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
-    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
+    Handle<Value> personalValue =
+        object->Get(New("personalization").ToLocalChecked());
     Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
     Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
-    Handle<Array> solutionArray = Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
+    Handle<Array> solutionArray =
+        Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
 
     const unsigned n = To<uint32_t>(nValue).FromJust();
     const unsigned k = To<uint32_t>(kValue).FromJust();
@@ -222,10 +247,12 @@ NAN_METHOD(VerifySync) {
     Handle<Object> object = Handle<Object>::Cast(info[0]);
     Handle<Value> nValue = object->Get(New("n").ToLocalChecked());
     Handle<Value> kValue = object->Get(New("k").ToLocalChecked());
-    Handle<Value> personalValue = object->Get(New("personal").ToLocalChecked());
+    Handle<Value> personalValue =
+        object->Get(New("personalization").ToLocalChecked());
     Handle<Value> seedValue = object->Get(New("seed").ToLocalChecked());
     Handle<Value> nonceValue = object->Get(New("nonce").ToLocalChecked());
-    Handle<Array> solutionArray = Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
+    Handle<Array> solutionArray =
+        Handle<Array>::Cast(object->Get(New("solution").ToLocalChecked()));
 
     const unsigned n = To<uint32_t>(nValue).FromJust();
     const unsigned k = To<uint32_t>(kValue).FromJust();

@@ -102,9 +102,15 @@ An engine based on the original `khovratovich` reference code.
 API additions:
 - `BLAKE2B_PERSONALIZATION_BYTES`: The number of supported BLAKE2b
   personalization bytes (16).
+- `MIN_DIFFICULTY`: The minimum difficulty value.
+- `MAX_DIFFICULTY`: The maximum difficulty value.
 
 `algorithmParameters`:
 - `personalization`: `Buffer` of BLAKE2b "personalization" bytes (optional)
+- `difficulty`: Integer between MIN\_DIFFICULTY MAX\_DIFFICULTY. Higher numbers
+  are more difficult and may increase the number of nonces that need to be
+  checked. The leading 53 bits of a hash computed from the solution must be
+  higher than the difficulty value. (optional)
 
 ## Usage Example
 
