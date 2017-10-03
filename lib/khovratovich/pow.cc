@@ -66,13 +66,11 @@ void Equihash::PrintTuples(FILE* fp) {
     fprintf(fp, "TOTAL: %d elements printed", count);
 }
 
-void Equihash::FillMemory(uint32_t length) //works for k<=7
-{
-    blake2b_state state[1];
-    uint32_t buf[MAX_N / 4];
+void Equihash::InitializeBaseHashState() {
+    blake2b_state *state = (blake2b_state*)baseHashState;
     blake2b_param P =
     {
-        sizeof(buf),
+        sizeof(uint32_t) * MAX_N / 4,
         0,
         1,
         1,
@@ -89,11 +87,23 @@ void Equihash::FillMemory(uint32_t length) //works for k<=7
             std::min(personal.size(), (size_t)BLAKE2B_PERSONALBYTES));
     blake2b_init_param(state, &P);
     blake2b_update(state, seed.data(), seed.size());
+}
+
+void Equihash::InitializeNonceBaseHashState() {
+    blake2b_state *state = (blake2b_state*)nonceBaseHashState;
+    // copy base state and update with nonce
+    state[0] = *((blake2b_state*)baseHashState);
     blake2b_update(state, nonce.data(), nonce.size());
+}
+
+//works for k<=7
+void Equihash::FillMemory(uint32_t length)
+{
+    uint32_t buf[MAX_N / 4];
 
     for (uint32_t i = 0; i < length; ++i) {
         // copy state
-        blake2b_state next_state = state[0];
+        blake2b_state next_state = *((blake2b_state*)nonceBaseHashState);
         // update with next input
         uint32_t input = htole32(i);
         //printf("INP %d\n", input);
@@ -131,7 +141,6 @@ std::vector<Input> Equihash::ResolveTree(Fork fork) {
     return ResolveTreeByLevel(fork, forks.size());
 }
 
-
 void Equihash::ResolveCollisions(bool store) {
     const unsigned tableLength = tupleList.size();  //number of rows in the hashtable
     const unsigned maxNewCollisions = tupleList.size()*FORK_MULTIPLIER;  //max number of collisions to be found
@@ -151,15 +160,19 @@ void Equihash::ResolveCollisions(bool store) {
                 if (store) {  //last step
                     if (newIndex == 0) {//Solution
                         std::vector<Input> solution_inputs = ResolveTree(newFork);
+                        solutionCount++;
                         // distinct indices check
                         if (HasDistinctIndicies(solution_inputs)) {
-                            // order tree and save
-                            OrderSolution(solution_inputs);
-                            solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
-                            // TODO: support returning more solutions?
-                            // TODO: support difficulty check
-                            // only need one solution, return
-                            return;
+                            distinctCount++;
+                            if (HasDifficulty(solution_inputs)) {
+                                difficultCount++;
+                                // order tree and save
+                                OrderSolution(solution_inputs);
+                                solutions.push_back(Proof(n, k, personal, seed, nonce, solution_inputs));
+                                // TODO: support returning more solutions?
+                                // only need one solution, return
+                                return;
+                            }
                         }
                     }
                 }
@@ -195,6 +208,26 @@ bool Equihash::HasDistinctIndicies(Solution &solution) {
     return true;
 }
 
+bool Equihash::HasDifficulty(Solution &solution) {
+    blake2b_state state[1];
+    uint32_t buf[MAX_N / 4];
+    // copy base state
+    state[0] = *((blake2b_state*)nonceBaseHashState);
+
+    // update with each solution value
+    for (auto d : solution) {
+        uint32_t input = htole32(d);
+        blake2b_update(state, (uint8_t*)&input, sizeof(uint32_t));
+    }
+    // finalize
+    blake2b_final(state, (uint8_t*)buf, sizeof(buf));
+    // check first 53 bits of hash >= difficulty
+    // TODO: handle lt/gt 53 bits of difficulty?
+    uint64_t bits = ((uint64_t)buf[0] + ((uint64_t)buf[1] << 32)) >> (64 - 53);
+    //printf("D B:%0llx D:%0llx\n", bits, difficulty);
+    return bits >= difficulty;
+}
+
 void Equihash::OrderSolution(Solution &solution) {
     // order tree
     for (size_t level = 0; level < k; ++level) {
@@ -219,32 +252,53 @@ void Equihash::IncrementNonce() {
 }
 
 Proof Equihash::FindProof() {
+    // allocate base and per-nonce hash state
+    blake2b_state baseState[1];
+    blake2b_state nonceBaseState[1];
+    baseHashState = baseState;
+    nonceBaseHashState = nonceBaseState;
+
+    InitializeBaseHashState();
+
+    nonceCount = 0;
+    solutionCount = 0;
+    distinctCount = 0;
+    difficultCount = 0;
+
     //FILE* fp = fopen("proof.log", "w+");
     //fclose(fp);
     for(uint32_t count = 0; count < maxNonces; ++count) {
-        //printf("Testing nonce %d\n", nonce);
+        nonceCount++;
+        /*
+        if(count % 10 == 0) {
+            printf("[%d] stats S:%u U:%d D:%u\n",
+                    nonceCount, solutionCount, distinctCount, difficultCount);
+        }
+        */
         //uint64_t start_cycles = rdtsc();
         InitializeMemory(); //allocate
+        InitializeNonceBaseHashState();
         FillMemory(4UL << (n / (k + 1)-1));   //fill with hashes
         //uint64_t fill_end = rdtsc();
-        //printf("Filling %2.2f  Mcycles \n", (double)(fill_end - start_cycles) / (1UL << 20));
+        //printf("[%d] FillMemory Mcycles=%2.2f\n", count, (double)(fill_end - start_cycles) / (1UL << 20));
         for (unsigned i = 1; i <= k; ++i) {
             //uint64_t resolve_start = rdtsc();
             bool to_store = (i == k);
             ResolveCollisions(to_store); //XOR collisions, concatenate indices and shift
             //uint64_t resolve_end = rdtsc();
-            //printf("Resolving %2.2f  Mcycles \n", (double)(resolve_end - resolve_start) / (1UL << 20));
+            //printf("[%d] ResolveCollisions Mcycles=%2.2f\n", count, (double)(resolve_end - resolve_start) / (1UL << 20));
         }
         //uint64_t stop_cycles = rdtsc();
 
         //double  mcycles_d = (double)(stop_cycles - start_cycles) / (1UL << 20);
         //uint32_t kbytes = (tupleList.size()*LIST_LENGTH*k*sizeof(uint32_t)) / (1UL << 10);
-        //printf("Time spent for n=%d k=%d  %d KiB: %2.2f  Mcycles \n",
-        //    n, k, kbytes,
-        //    mcycles_d);
+        //printf("[%d] total time n=%d k=%d sols=%d KiB=%d Mcycles=%2.2f\n",
+        //    count, n, k, solutions.size(), kbytes, mcycles_d);
 
         // check for a valid solution
+        //printf("NonceCount:%d sols:%d\n", count, solutions.size());
         if(solutions.size() > 0) {
+            //printf("Found @ NonceCount:%d\n", count);
             return solutions[0];
         }
         IncrementNonce();

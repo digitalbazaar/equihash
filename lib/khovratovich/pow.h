@@ -89,6 +89,8 @@ public:
  * Assumes that n/(k+1) <= 32
  */
 class Equihash {
+    void *baseHashState;
+    void *nonceBaseHashState;
     std::vector<std::vector<Tuple>> tupleList;
     std::vector<unsigned> filledList;
     std::vector<Proof> solutions;
@@ -99,23 +101,30 @@ class Equihash {
     Seed seed;
     Nonce nonce;
     uint32_t maxNonces;
+    uint64_t difficulty;
 
-    void FillMemory(uint32_t length);      //fill with hash
+    void InitializeBaseHashState();
+    void InitializeNonceBaseHashState();
+    void FillMemory(uint32_t length); //fill with hash
     void InitializeMemory(); //allocate memory
     void ResolveCollisions(bool store);
     bool HasDistinctIndicies(Solution &solution);
+    bool HasDifficulty(Solution &solution);
     void OrderSolution(Solution &solution);
     void IncrementNonce();
     std::vector<Input> ResolveTree(Fork fork);
     std::vector<Input> ResolveTreeByLevel(Fork fork, unsigned level);
 public:
-    /*
-       Initializes memory.
-       */
-    Equihash(unsigned n_in, unsigned k_in, Personal personal, Seed s, Nonce nonce, uint32_t maxNonces):
-        n(n_in), k(k_in), personal(personal), seed(s), nonce(nonce), maxNonces(maxNonces) {};
+    // stats
+    unsigned nonceCount;
+    unsigned solutionCount;
+    unsigned distinctCount;
+    unsigned difficultCount;
+
+    Equihash(unsigned n_in, unsigned k_in, Personal personal, Seed s, Nonce nonce, uint32_t maxNonces, uint64_t difficulty):
+        n(n_in), k(k_in), personal(personal), seed(s), nonce(nonce), maxNonces(maxNonces), difficulty(difficulty) {};
     Equihash(const Equihash &eh):
-        n(eh.n), k(eh.k), personal(eh.personal), seed(eh.seed), nonce(eh.nonce), maxNonces(eh.maxNonces) {};
+        n(eh.n), k(eh.k), personal(eh.personal), seed(eh.seed), nonce(eh.nonce), maxNonces(eh.maxNonces), difficulty(eh.difficulty) {};
     ~Equihash() {};
     Proof FindProof();
     void PrintTuples(FILE* fp);

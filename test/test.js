@@ -473,11 +473,13 @@ describe('Equihash', function() {
   it('should verify a valid proof with personal bytes', function(done) {
     const eh = equihash.engine('khovratovich');
     assert(eh);
-    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
+    const personalization = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
-      personal
+      algorithmParameters: {
+        personalization
+      }
     };
     const seed = _seed();
 
@@ -485,7 +487,9 @@ describe('Equihash', function() {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
-      assert(proof.personal.equals(options.personal));
+      assert(
+        proof.algorithmParameters.personalization.equals(
+          options.algorithmParameters.personalization));
       assert(proof.nonce);
       assert(proof.solution);
       eh.verify(seed, proof, (err, verified) => {
@@ -498,11 +502,13 @@ describe('Equihash', function() {
   it('should fail to verify with bad personal bytes', function(done) {
     const eh = equihash.engine('khovratovich');
     assert(eh);
-    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
+    const personalization = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
-      personal
+      algorithmParameters: {
+        personalization
+      }
     };
     const seed = _seed();
 
@@ -510,10 +516,13 @@ describe('Equihash', function() {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
-      assert(proof.personal.equals(options.personal));
+      assert(
+        proof.algorithmParameters.personalization.equals(
+          options.algorithmParameters.personalization));
       assert(proof.nonce);
       assert(proof.solution);
-      proof.personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 2);
+      proof.algorithmParameters.personalization =
+        Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 2);
       eh.verify(seed, proof, (err, verified) => {
         assert.ifError(err);
         assert(!verified);
@@ -524,11 +533,13 @@ describe('Equihash', function() {
   it('should fail to solve with too many personal bytes', function(done) {
     const eh = equihash.engine('khovratovich');
     assert(eh);
-    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 0);
+    const personalization = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 0);
     const options = {
       n: 90,
       k: 5,
-      personal
+      algorithmParameters: {
+        personalization
+      }
     };
     const seed = _seed();
 
@@ -540,11 +551,13 @@ describe('Equihash', function() {
   it('should fail to verify with too many personal bytes', function(done) {
     const eh = equihash.engine('khovratovich');
     assert(eh);
-    const personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
+    const personalization = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES, 1);
     const options = {
       n: 90,
       k: 5,
-      personal
+      algorithmParameters: {
+        personalization
+      }
     };
     const seed = _seed();
 
@@ -552,10 +565,13 @@ describe('Equihash', function() {
       assert.ifError(err);
       assert.equal(proof.n, options.n);
       assert.equal(proof.k, options.k);
-      assert(proof.personal.equals(options.personal));
+      assert(
+        proof.algorithmParameters.personalization.equals(
+          options.algorithmParameters.personalization));
       assert(proof.nonce);
       assert(proof.solution);
-      proof.personal = Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 1);
+      proof.algorithmParameters.personalization =
+        Buffer.alloc(eh.BLAKE2B_PERSONAL_BYTES + 1, 1);
       eh.verify(seed, proof, (err, verified) => {
         assert(err);
         done();
@@ -627,6 +643,101 @@ describe('Equihash', function() {
         assert(!verified);
         done();
       });
+    });
+  });
+  it('should fail solve with too high difficulty', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const options = {
+      n: 90,
+      k: 5,
+      algorithmParameters: {
+        difficulty: eh.MAX_DIFFICULTY + 1
+      }
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should fail solve with negative difficulty', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const options = {
+      n: 90,
+      k: 5,
+      algorithmParameters: {
+        difficulty: eh.MIN_DIFFICULTY - 1
+      }
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should solve with more difficulty', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const options = {
+      n: 90,
+      k: 5,
+      algorithmParameters: {
+        difficulty: eh.MIN_DIFFICULTY
+      }
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert.ifError(err);
+      // change to make harder, specific to this seed
+      options.algorithmParameters.difficulty = 0x1d5fffffffffff;
+      const distinct1 = proof.statistics.distinctCount;
+      equihash.solve(seed, options, (err, proof) => {
+        assert.ifError(err);
+        const distinct2 = proof.statistics.distinctCount;
+        assert(distinct2 > distinct1);
+        done();
+      });
+    });
+  });
+  it('should not solve with high difficulty', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const options = {
+      n: 90,
+      k: 5,
+      maxNonces: 20,
+      algorithmParameters: {
+        difficulty: eh.MAX_DIFFICULTY
+      }
+    };
+    const seed = _seed();
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(err);
+      done();
+    });
+  });
+  it('should solve with high difficulty', function(done) {
+    const eh = equihash.engine('khovratovich');
+    assert(eh);
+    const options = {
+      n: 64,
+      k: 3,
+      algorithmParameters: {
+        difficulty: eh.MAX_DIFFICULTY * .8
+      }
+    };
+    const seed = _seed('x');
+
+    equihash.solve(seed, options, (err, proof) => {
+      assert(proof.statistics.distinctCount > 1);
+      assert.ifError(err);
+      done();
     });
   });
 });
